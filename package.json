@@ -1,0 +1,36 @@
+{
+  "name": "robin-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A monorepo for ROBIN's infrastructure projects",
+  "author": "wanglaibin<196903849@qq.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm -r run dev",
+    "test": "pnpm -r run test",
+    "fmt": "oxfmt -c oxfmtrc.jsonc",
+    "lint": "oxlint -c oxlintrc.json --deny-warnings --type-aware --type-check --report-unused-disable-directives",
+    "clean": "pnpm -r run clean && rimraf node_modules",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish",
+    "docs:dev": "pnpm --filter @robin/docs dev",
+    "docs:build": "pnpm --filter @robin/docs build",
+    "docs:preview": "pnpm --filter @robin/docs preview"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8",
+    "@types/node": "^25.2.0",
+    "oxfmt": "^0.28.0",
+    "oxlint": "^1.43.0",
+    "oxlint-tsgolint": "0.11.4",
+    "rimraf": "^6.1.2",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "pnpm@9.11.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.11.0"
+  }
+}

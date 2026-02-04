@@ -1,0 +1,14 @@
+{
+    "name": "@robin/docs",
+    "version": "0.0.1",
+    "private": true,
+    "scripts": {
+        "dev": "vitepress dev",
+        "build": "vitepress build",
+        "preview": "vitepress preview"
+    },
+    "devDependencies": {
+    },
+    "dependencies": {
+    }
+}
