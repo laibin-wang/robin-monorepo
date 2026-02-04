@@ -1,4 +1,4 @@
-# MonitorSDK 监控 SDK
+# MonitorSDK 监控 "SDK"
 
 基于浏览器的前端监控与日志埋点 SDK，支持错误监控、行为埋点和智能上报。
 
@@ -469,12 +469,7 @@ monitor.init({
 SDK 提供完整的类型定义：
 
 ```typescript
-import monitor, {
-	MonitorInitOptions,
-	TrackPageOptions,
-	TrackEventOptions,
-	MonitorStats,
-} from 'cotc-monitor-sdk'
+import monitor, { MonitorInitOptions, TrackPageOptions, TrackEventOptions, MonitorStats } from 'cotc-monitor-sdk'
 
 const options: MonitorInitOptions = {
 	appId: 'app',
