@@ -64,37 +64,37 @@ npm run build
 ### 1. ESM 方式（推荐）
 
 ```typescript
-import monitor from 'cotc-monitor-sdk';
+import monitor from 'cotc-monitor-sdk'
 
 // 初始化
 monitor.init({
-  appId: 'your-app-id',
-  endpoint: 'https://your-server.com/api/collect',
-  debug: true,  // 开发环境建议开启
-  enableError: true,
-  enableBehavior: true
-});
+	appId: 'your-app-id',
+	endpoint: 'https://your-server.com/api/collect',
+	debug: true, // 开发环境建议开启
+	enableError: true,
+	enableBehavior: true,
+})
 
 // 页面埋点
-monitor.trackPage();
+monitor.trackPage()
 
 // 事件埋点
 monitor.trackEvent({
-  name: 'button_click',
-  buttonId: 'submit',
-  eventCategory: 'auth'
-});
+	name: 'button_click',
+	buttonId: 'submit',
+	eventCategory: 'auth',
+})
 ```
 
 ### 2. CommonJS 方式
 
 ```javascript
-const monitor = require('cotc-monitor-sdk').default;
+const monitor = require('cotc-monitor-sdk').default
 
 monitor.init({
-  appId: 'your-app-id',
-  endpoint: 'https://your-server.com/api/collect'
-});
+	appId: 'your-app-id',
+	endpoint: 'https://your-server.com/api/collect',
+})
 ```
 
 ### 3. UMD 方式（Script 标签）
@@ -102,12 +102,12 @@ monitor.init({
 ```html
 <script src="./dist/index.umd.js"></script>
 <script>
-  CotcMonitor.init({
-    appId: 'your-app-id',
-    endpoint: 'https://your-server.com/api/collect'
-  });
+	CotcMonitor.init({
+		appId: 'your-app-id',
+		endpoint: 'https://your-server.com/api/collect',
+	})
 
-  CotcMonitor.trackPage();
+	CotcMonitor.trackPage()
 </script>
 ```
 
@@ -139,14 +139,14 @@ monitor.init({
 
 ```typescript
 // 自动获取当前页面信息
-monitor.trackPage();
+monitor.trackPage()
 
 // 自定义页面信息
 monitor.trackPage({
-  path: '/home',
-  title: '首页',
-  referrer: '...'
-});
+	path: '/home',
+	title: '首页',
+	referrer: '...',
+})
 ```
 
 ### trackEvent(options)
@@ -155,11 +155,11 @@ monitor.trackPage({
 
 ```typescript
 monitor.trackEvent({
-  name: 'button_click',      // 必填：事件名称
-  buttonId: 'login',         // 自定义字段
-  eventCategory: 'auth',     // 自定义字段  
-  eventLabel: '登录按钮'      // 自定义字段
-});
+	name: 'button_click', // 必填：事件名称
+	buttonId: 'login', // 自定义字段
+	eventCategory: 'auth', // 自定义字段
+	eventLabel: '登录按钮', // 自定义字段
+})
 ```
 
 ### captureError(error, extra?)
@@ -168,21 +168,21 @@ monitor.trackEvent({
 
 ```typescript
 try {
-  // some code
+	// some code
 } catch (error) {
-  monitor.captureError(error, {
-    module: 'login',
-    level: 'error'
-  });
+	monitor.captureError(error, {
+		module: 'login',
+		level: 'error',
+	})
 }
 ```
 
 ### setUser(userId)
 
-设置用户 ID  
+设置用户 ID
 
 ```typescript
-monitor.setUser('user-12345');
+monitor.setUser('user-12345')
 ```
 
 ### clearUser()
@@ -190,7 +190,7 @@ monitor.setUser('user-12345');
 清除用户 ID
 
 ```typescript
-monitor.clearUser();
+monitor.clearUser()
 ```
 
 ### flush()
@@ -198,7 +198,7 @@ monitor.clearUser();
 手动触发上报
 
 ```typescript
-monitor.flush();
+monitor.flush()
 ```
 
 ### getStats()
@@ -206,8 +206,8 @@ monitor.flush();
 获取统计信息（调试用）
 
 ```typescript
-const stats = monitor.getStats();
-console.log(stats);
+const stats = monitor.getStats()
+console.log(stats)
 // {
 //   queueSize: 3,          // 当前队列大小
 //   totalEvents: 42,       // 总事件数
@@ -247,27 +247,27 @@ Content-Type: application/json
 
 ```json
 {
-  "appId": "your-app-id",
-  "sessionId": "sess-xxx",
-  "events": [
-    {
-      "type": "error",
-      "name": "js_error",
-      "timestamp": 1700000000000,
-      "appId": "your-app-id",
-      "sessionId": "sess-xxx",
-      "userId": "user-123",
-      "url": "https://example.com/page",
-      "referrer": "https://example.com/",
-      "userAgent": "Mozilla/5.0...",
-      "sdkVersion": "0.1.0",
-      "extra": {
-        "message": "xxx is not defined",
-        "stack": "...",
-        "errorType": "js"
-      }
-    }
-  ]
+	"appId": "your-app-id",
+	"sessionId": "sess-xxx",
+	"events": [
+		{
+			"type": "error",
+			"name": "js_error",
+			"timestamp": 1700000000000,
+			"appId": "your-app-id",
+			"sessionId": "sess-xxx",
+			"userId": "user-123",
+			"url": "https://example.com/page",
+			"referrer": "https://example.com/",
+			"userAgent": "Mozilla/5.0...",
+			"sdkVersion": "0.1.0",
+			"extra": {
+				"message": "xxx is not defined",
+				"stack": "...",
+				"errorType": "js"
+			}
+		}
+	]
 }
 ```
 
@@ -293,15 +293,18 @@ npm run clean
 根据设计文档，以下功能可在后续迭代中实现：
 
 ### 第二阶段：稳定性增强
+
 - [ ] 错误去重与限流
 - [ ] 队列持久化（LocalStorage/IndexedDB）
 - [ ] sendBeacon 大小限制处理
 
 ### 第三阶段：性能与网络
+
 - [ ] 性能指标采集（FCP/LCP/CLS）
 - [ ] 网络请求监控（XHR/fetch）
 
 ### 第四阶段：自动化与插件
+
 - [ ] 自动点击埋点
 - [ ] React/Vue 路由插件
 - [ ] 插件机制
@@ -362,23 +365,23 @@ function App() {
 
 ```typescript
 // main.ts
-import { createApp } from 'vue';
-import router from './router';
-import monitor from 'cotc-monitor-sdk';
+import { createApp } from 'vue'
+import router from './router'
+import monitor from 'cotc-monitor-sdk'
 
 monitor.init({
-  appId: 'vue-app',
-  endpoint: 'https://api.example.com/collect'
-});
+	appId: 'vue-app',
+	endpoint: 'https://api.example.com/collect',
+})
 
-router.afterEach((to) => {
-  monitor.trackPage({
-    path: to.path,
-    title: to.meta.title as string || document.title
-  });
-});
+router.afterEach(to => {
+	monitor.trackPage({
+		path: to.path,
+		title: (to.meta.title as string) || document.title,
+	})
+})
 
-createApp(App).use(router).mount('#app');
+createApp(App).use(router).mount('#app')
 ```
 
 ---

@@ -41,33 +41,33 @@ yarn add cotc-monitor-sdk
 ```
 
 ```typescript
-import SignaturePad from 'cotc-signature-pad';
+import SignaturePad from 'cotc-signature-pad'
 
 const pad = new SignaturePad('signature', {
-  width: 400,
-  height: 200
-});
+	width: 400,
+	height: 200,
+})
 ```
 
 ### MonitorSDK
 
 ```typescript
-import monitor from 'cotc-monitor-sdk';
+import monitor from 'cotc-monitor-sdk'
 
 // 初始化
 monitor.init({
-  appId: 'your-app-id',
-  endpoint: 'https://api.example.com/collect'
-});
+	appId: 'your-app-id',
+	endpoint: 'https://api.example.com/collect',
+})
 
 // 页面埋点
-monitor.trackPage();
+monitor.trackPage()
 
 // 事件埋点
 monitor.trackEvent({
-  name: 'button_click',
-  buttonId: 'submit'
-});
+	name: 'button_click',
+	buttonId: 'submit',
+})
 ```
 
 ## TypeScript 支持
@@ -77,30 +77,30 @@ monitor.trackEvent({
 ### SignaturePad
 
 ```typescript
-import SignaturePad, { SignaturePadOptions } from 'cotc-signature-pad';
+import SignaturePad, { SignaturePadOptions } from 'cotc-signature-pad'
 
 const options: SignaturePadOptions = {
-  width: 400,
-  height: 200,
-  panColor: '#000000',
-  backgroundColor: '#ffffff'
-};
+	width: 400,
+	height: 200,
+	panColor: '#000000',
+	backgroundColor: '#ffffff',
+}
 
-const pad = new SignaturePad('signature', options);
+const pad = new SignaturePad('signature', options)
 ```
 
 ### MonitorSDK
 
 ```typescript
-import monitor, { MonitorInitOptions } from 'cotc-monitor-sdk';
+import monitor, { MonitorInitOptions } from 'cotc-monitor-sdk'
 
 const options: MonitorInitOptions = {
-  appId: 'my-app',
-  endpoint: 'https://api.example.com/collect',
-  debug: true,
-  enableError: true,
-  enableBehavior: true
-};
+	appId: 'my-app',
+	endpoint: 'https://api.example.com/collect',
+	debug: true,
+	enableError: true,
+	enableBehavior: true,
+}
 
-monitor.init(options);
+monitor.init(options)
 ```

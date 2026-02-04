@@ -2,8 +2,8 @@
 layout: home
 
 hero:
-  name: "COTC Plugins"
-  text: "COTC插件集合"
+  name: 'COTC Plugins'
+  text: 'COTC插件集合'
   tagline: 高质量的 JavaScript/TypeScript 组件库
   actions:
     - theme: brand

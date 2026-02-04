@@ -136,23 +136,23 @@ packages/
 SDK 内部和对接后端的核心是「统一事件模型」，所有采集类型最终统一到 `BaseEvent` 结构：
 
 ```ts
-type EventKind = 'error' | 'performance' | 'behavior' | 'network';
+type EventKind = 'error' | 'performance' | 'behavior' | 'network'
 
 interface BaseEvent {
-  type: EventKind;           // 事件大类
-  name: string;              // 事件名称，如 'js_error'、'page_view'、'LCP'
-  timestamp: number;         // 事件发生时间（ms）
+	type: EventKind // 事件大类
+	name: string // 事件名称，如 'js_error'、'page_view'、'LCP'
+	timestamp: number // 事件发生时间（ms）
 
-  appId: string;             // 应用 ID
-  sessionId: string;         // 会话 ID，由 SDK 自动生成
-  userId?: string;           // 用户 ID，可选，由业务通过 setUser 提供
+	appId: string // 应用 ID
+	sessionId: string // 会话 ID，由 SDK 自动生成
+	userId?: string // 用户 ID，可选，由业务通过 setUser 提供
 
-  url: string;               // 当前页面 URL
-  referrer?: string;         // 来源页面
-  userAgent: string;         // 浏览器 UA
-  sdkVersion: string;        // SDK 版本号
+	url: string // 当前页面 URL
+	referrer?: string // 来源页面
+	userAgent: string // 浏览器 UA
+	sdkVersion: string // SDK 版本号
 
-  extra?: Record<string, any>; // 各类型专有扩展字段
+	extra?: Record<string, any> // 各类型专有扩展字段
 }
 ```
 
@@ -162,12 +162,12 @@ interface BaseEvent {
 
 ```ts
 interface ErrorExtra {
-  message: string;
-  stack?: string;
-  filename?: string;
-  lineno?: number;
-  colno?: number;
-  errorType: 'js' | 'promise' | 'resource';
+	message: string
+	stack?: string
+	filename?: string
+	lineno?: number
+	colno?: number
+	errorType: 'js' | 'promise' | 'resource'
 }
 ```
 
@@ -175,20 +175,20 @@ interface ErrorExtra {
 
 ```ts
 interface BehaviorExtra {
-  // 页面埋点（PageView）
-  pageType?: 'page_view' | 'route_change';
-  path?: string;           // 页面路径（如 /home）
-  title?: string;          // 页面标题
-  referrer?: string;       // 前一个页面
+	// 页面埋点（PageView）
+	pageType?: 'page_view' | 'route_change'
+	path?: string // 页面路径（如 /home）
+	title?: string // 页面标题
+	referrer?: string // 前一个页面
 
-  // 事件埋点（Event）
-  elementId?: string;
-  elementText?: string;
-  eventCategory?: string;  // 业务自定义类别，如 'auth' / 'order'
-  eventLabel?: string;     // 业务自定义标签
+	// 事件埋点（Event）
+	elementId?: string
+	elementText?: string
+	eventCategory?: string // 业务自定义类别，如 'auth' / 'order'
+	eventLabel?: string // 业务自定义标签
 
-  // 预留字段
-  [key: string]: any;
+	// 预留字段
+	[key: string]: any
 }
 ```
 
@@ -202,27 +202,27 @@ interface BehaviorExtra {
 
 ```json
 {
-  "appId": "string",
-  "sessionId": "string",
-  "events": [
-    {
-      "type": "error",
-      "name": "js_error",
-      "timestamp": 1700000000000,
-      "appId": "demo-app",
-      "sessionId": "sess-xxx",
-      "userId": "user-123",
-      "url": "https://example.com/page",
-      "referrer": "https://example.com/",
-      "userAgent": "Mozilla/5.0 ...",
-      "sdkVersion": "0.1.0",
-      "extra": {
-        "message": "xxx is not defined",
-        "stack": "...",
-        "errorType": "js"
-      }
-    }
-  ]
+	"appId": "string",
+	"sessionId": "string",
+	"events": [
+		{
+			"type": "error",
+			"name": "js_error",
+			"timestamp": 1700000000000,
+			"appId": "demo-app",
+			"sessionId": "sess-xxx",
+			"userId": "user-123",
+			"url": "https://example.com/page",
+			"referrer": "https://example.com/",
+			"userAgent": "Mozilla/5.0 ...",
+			"sdkVersion": "0.1.0",
+			"extra": {
+				"message": "xxx is not defined",
+				"stack": "...",
+				"errorType": "js"
+			}
+		}
+	]
 }
 ```
 
@@ -290,57 +290,57 @@ interface BehaviorExtra {
 
 ```ts
 interface MonitorInitOptions {
-  appId: string;            // 必填，应用标识
-  endpoint: string;         // 必填，上报地址
+	appId: string // 必填，应用标识
+	endpoint: string // 必填，上报地址
 
-  userId?: string;          // 可选，若已登录可直接传入
+	userId?: string // 可选，若已登录可直接传入
 
-  sampleRate?: number;      // 采样率，0~1，默认 1（100%）
-  maxBatchSize?: number;    // 批量大小，默认 10
-  uploadInterval?: number;  // 批量上报间隔 ms，默认 5000
+	sampleRate?: number // 采样率，0~1，默认 1（100%）
+	maxBatchSize?: number // 批量大小，默认 10
+	uploadInterval?: number // 批量上报间隔 ms，默认 5000
 
-  enableError?: boolean;        // 是否开启错误采集，默认 true
-  enableBehavior?: boolean;     // 是否开启行为埋点，默认 true
-  enablePerformance?: boolean;  // 是否开启性能采集，默认 false（后续实现）
-  enableNetwork?: boolean;      // 是否开启网络请求采集，默认 false（后续实现）
+	enableError?: boolean // 是否开启错误采集，默认 true
+	enableBehavior?: boolean // 是否开启行为埋点，默认 true
+	enablePerformance?: boolean // 是否开启性能采集，默认 false（后续实现）
+	enableNetwork?: boolean // 是否开启网络请求采集，默认 false（后续实现）
 
-  // 错误去重与限流（后续迭代，建议 MVP 后第一轮实现）
-  errorThrottle?: {
-    maxCount?: number;          // 相同错误在时间窗口内最多上报次数，默认 10
-    timeWindow?: number;        // 时间窗口（ms），默认 60000（1分钟）
-    dedupBy?: 'message' | 'message_stack_hash'; // 去重依据：仅 message 或 message+stack 的 hash
-  };
+	// 错误去重与限流（后续迭代，建议 MVP 后第一轮实现）
+	errorThrottle?: {
+		maxCount?: number // 相同错误在时间窗口内最多上报次数，默认 10
+		timeWindow?: number // 时间窗口（ms），默认 60000（1分钟）
+		dedupBy?: 'message' | 'message_stack_hash' // 去重依据：仅 message 或 message+stack 的 hash
+	}
 
-  // 队列持久化（后续迭代）
-  persistentBeforeCrash?: boolean; // 是否在页面崩溃前持久化未上报数据到 LocalStorage/IndexedDB
-  storageKey?: string;              // 持久化存储 key，默认 'cotc_monitor_queue'
+	// 队列持久化（后续迭代）
+	persistentBeforeCrash?: boolean // 是否在页面崩溃前持久化未上报数据到 LocalStorage/IndexedDB
+	storageKey?: string // 持久化存储 key，默认 'cotc_monitor_queue'
 }
 ```
 
 对外使用方式（多框架通用）：
 
 ```ts
-import monitor from 'cotc-monitor-sdk';
+import monitor from 'cotc-monitor-sdk'
 
 monitor.init({
-  appId: 'your-app-id',
-  endpoint: 'https://log.example.com/collect',
-  sampleRate: 1,
-  maxBatchSize: 10,
-  uploadInterval: 5000,
-  enableError: true,
-  enableBehavior: true
-});
+	appId: 'your-app-id',
+	endpoint: 'https://log.example.com/collect',
+	sampleRate: 1,
+	maxBatchSize: 10,
+	uploadInterval: 5000,
+	enableError: true,
+	enableBehavior: true,
+})
 ```
 
 ### 6.2 用户信息管理
 
 ```ts
 // 登录后设置用户
-monitor.setUser('user-123');
+monitor.setUser('user-123')
 
 // 退出登录时清空用户信息（可选设计）
-monitor.clearUser();
+monitor.clearUser()
 ```
 
 - 若未调用 `setUser`，SDK 仍然可用，只是事件中不包含 `userId`。
@@ -355,13 +355,13 @@ monitor.clearUser();
 ```ts
 // 全量写法
 monitor.trackPage({
-  path: '/home',
-  title: document.title,
-  referrer: document.referrer
-});
+	path: '/home',
+	title: document.title,
+	referrer: document.referrer,
+})
 
 // 简化写法（可选设计：若不传则使用当前 location 信息）
-monitor.trackPage();
+monitor.trackPage()
 ```
 
 - 适用场景：
@@ -390,12 +390,12 @@ SDK 内部会将其封装为一个 `type: 'behavior'` 的行为事件，例如�
 
 ```ts
 monitor.trackEvent({
-  name: 'button_click',
-  buttonId: 'login',
-  page: '/login',
-  eventCategory: 'auth',
-  eventLabel: '登录按钮'
-});
+	name: 'button_click',
+	buttonId: 'login',
+	page: '/login',
+	eventCategory: 'auth',
+	eventLabel: '登录按钮',
+})
 ```
 
 - `options.name`：事件名称（如 `button_click`、`submit_order`）
@@ -422,9 +422,9 @@ SDK 内部会将其封装为：
 ```ts
 // 主动捕获并上报错误
 monitor.captureError(error, {
-  module: 'login',
-  level: 'error'
-});
+	module: 'login',
+	level: 'error',
+})
 ```
 
 - `error` 支持 `Error` 实例、字符串或任意未知类型。
@@ -435,7 +435,7 @@ monitor.captureError(error, {
 
 ```ts
 // 在某些需要即时上报的场景（如关键流程结束）可以手动调用
-monitor.flush();
+monitor.flush()
 ```
 
 ---
@@ -448,11 +448,11 @@ monitor.flush();
 
 ```ts
 interface MonitorPlugin {
-  name: string;
-  setup(client: MonitorClient): void;
+	name: string
+	setup(client: MonitorClient): void
 }
 
-monitor.use(plugin);
+monitor.use(plugin)
 ```
 
 示例插件：
@@ -671,78 +671,75 @@ SDK 需要支持多种模块格式以适配不同使用场景：
 
 ```json
 {
-  "name": "cotc-monitor-sdk",
-  "version": "0.1.0",
-  "main": "./dist/index.cjs.js",
-  "module": "./dist/index.esm.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
-      "require": "./dist/index.cjs.js"
-    }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "rollup -c"
-  },
-  "devDependencies": {
-    "@rollup/plugin-typescript": "^11.1.6",
-    "@rollup/plugin-terser": "^0.4.4",
-    "rollup": "^4.9.6",
-    "typescript": "^5.3.3"
-  }
+	"name": "cotc-monitor-sdk",
+	"version": "0.1.0",
+	"main": "./dist/index.cjs.js",
+	"module": "./dist/index.esm.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.esm.js",
+			"require": "./dist/index.cjs.js"
+		}
+	},
+	"files": ["dist"],
+	"scripts": {
+		"build": "rollup -c"
+	},
+	"devDependencies": {
+		"@rollup/plugin-typescript": "^11.1.6",
+		"@rollup/plugin-terser": "^0.4.4",
+		"rollup": "^4.9.6",
+		"typescript": "^5.3.3"
+	}
 }
 ```
 
 **rollup.config.js 配置：**
 
 ```js
-import typescript from '@rollup/plugin-typescript';
-import terser from '@rollup/plugin-terser';
-import { defineConfig } from 'rollup';
+import typescript from '@rollup/plugin-typescript'
+import terser from '@rollup/plugin-terser'
+import { defineConfig } from 'rollup'
 
 export default defineConfig([
-  // ESM 和 CJS 构建
-  {
-    input: 'src/index.ts',
-    output: [
-      {
-        file: 'dist/index.esm.js',
-        format: 'esm',
-        sourcemap: true
-      },
-      {
-        file: 'dist/index.cjs.js',
-        format: 'cjs',
-        sourcemap: true,
-        exports: 'auto'
-      }
-    ],
-    plugins: [
-      typescript({
-        declaration: true,
-        declarationDir: 'dist',
-        rootDir: 'src'
-      })
-    ]
-  },
-  // UMD 构建（压缩版）
-  {
-    input: 'src/index.ts',
-    output: {
-      file: 'dist/index.umd.js',
-      format: 'umd',
-      name: 'CotcMonitor',
-      sourcemap: true
-    },
-    plugins: [
-      typescript(),
-      terser()
-    ]
-  }
-]);
+	// ESM 和 CJS 构建
+	{
+		input: 'src/index.ts',
+		output: [
+			{
+				file: 'dist/index.esm.js',
+				format: 'esm',
+				sourcemap: true,
+			},
+			{
+				file: 'dist/index.cjs.js',
+				format: 'cjs',
+				sourcemap: true,
+				exports: 'auto',
+			},
+		],
+		plugins: [
+			typescript({
+				declaration: true,
+				declarationDir: 'dist',
+				rootDir: 'src',
+			}),
+		],
+	},
+	// UMD 构建（压缩版）
+	{
+		input: 'src/index.ts',
+		output: {
+			file: 'dist/index.umd.js',
+			format: 'umd',
+			name: 'CotcMonitor',
+			sourcemap: true,
+		},
+		plugins: [typescript(), terser()],
+	},
+])
 ```
 
 ### 14.3 版本管理
@@ -792,7 +789,7 @@ export default defineConfig([
 SDK 可提供内部性能指标（开发模式）：
 
 ```ts
-monitor.getStats(); // 返回：{ queueSize, totalEvents, droppedEvents, avgUploadTime }
+monitor.getStats() // 返回：{ queueSize, totalEvents, droppedEvents, avgUploadTime }
 ```
 
 ### 15.4 性能测试基准
@@ -817,4 +814,3 @@ monitor.getStats(); // 返回：{ queueSize, totalEvents, droppedEvents, avgUplo
 - **高频事件限流**：同一类型事件在短时间内（如 1 秒）最多采集 N 次
 - **队列满时丢弃策略**：优先保留错误事件，丢弃行为埋点
 - **自动降采样**：在低端设备或资源受限环境下，动态降低采样率
-

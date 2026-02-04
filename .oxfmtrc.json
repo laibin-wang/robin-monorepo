@@ -1,8 +1,10 @@
 {
-  "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "useTabs": true,
-  "semi": false,
-  "singleQuote":true,
-  "experimentalSortImports": {},
-  "ignorePatterns": []
+	"$schema": "./node_modules/oxfmt/configuration_schema.json",
+	"useTabs": true,
+	"semi": false,
+	"singleQuote": true,
+	"experimentalSortImports": {},
+	"bracketSpacing": true,
+	"arrowParens": "avoid",
+	"ignorePatterns": []
 }

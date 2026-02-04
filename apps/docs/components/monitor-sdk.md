@@ -35,52 +35,52 @@ pnpm add cotc-monitor-sdk
 ### 基本使用
 
 ```typescript
-import monitor from 'cotc-monitor-sdk';
+import monitor from 'cotc-monitor-sdk'
 
 // 初始化
 monitor.init({
-  appId: 'your-app-id',
-  endpoint: 'https://api.example.com/collect',
-  debug: true  // 开发环境建议开启
-});
+	appId: 'your-app-id',
+	endpoint: 'https://api.example.com/collect',
+	debug: true, // 开发环境建议开启
+})
 
 // 页面埋点
-monitor.trackPage();
+monitor.trackPage()
 
 // 事件埋点
 monitor.trackEvent({
-  name: 'button_click',
-  buttonId: 'submit',
-  eventCategory: 'auth'
-});
+	name: 'button_click',
+	buttonId: 'submit',
+	eventCategory: 'auth',
+})
 ```
 
 ### React 集成
 
 ```tsx
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import monitor from 'cotc-monitor-sdk';
+import { useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
+import monitor from 'cotc-monitor-sdk'
 
 function App() {
-  const location = useLocation();
+	const location = useLocation()
 
-  useEffect(() => {
-    monitor.init({
-      appId: 'react-app',
-      endpoint: 'https://api.example.com/collect',
-      debug: import.meta.env.DEV
-    });
-  }, []);
+	useEffect(() => {
+		monitor.init({
+			appId: 'react-app',
+			endpoint: 'https://api.example.com/collect',
+			debug: import.meta.env.DEV,
+		})
+	}, [])
 
-  useEffect(() => {
-    monitor.trackPage({
-      path: location.pathname,
-      title: document.title
-    });
-  }, [location]);
+	useEffect(() => {
+		monitor.trackPage({
+			path: location.pathname,
+			title: document.title,
+		})
+	}, [location])
 
-  return <YourApp />;
+	return <YourApp />
 }
 ```
 
@@ -88,23 +88,23 @@ function App() {
 
 ```typescript
 // main.ts
-import { createApp } from 'vue';
-import router from './router';
-import monitor from 'cotc-monitor-sdk';
+import { createApp } from 'vue'
+import router from './router'
+import monitor from 'cotc-monitor-sdk'
 
 monitor.init({
-  appId: 'vue-app',
-  endpoint: 'https://api.example.com/collect'
-});
+	appId: 'vue-app',
+	endpoint: 'https://api.example.com/collect',
+})
 
-router.afterEach((to) => {
-  monitor.trackPage({
-    path: to.path,
-    title: to.meta.title as string || document.title
-  });
-});
+router.afterEach(to => {
+	monitor.trackPage({
+		path: to.path,
+		title: (to.meta.title as string) || document.title,
+	})
+})
 
-createApp(App).use(router).mount('#app');
+createApp(App).use(router).mount('#app')
 ```
 
 ## API 参考
@@ -115,9 +115,9 @@ createApp(App).use(router).mount('#app');
 
 ```typescript
 monitor.init({
-  appId: 'string',           // 必填：应用标识  
+  appId: 'string',           // 必填：应用标识
   endpoint: 'string',        // 必填：上报地址
-  
+
   // 可选配置
   userId?: 'string',         // 用户 ID
   sampleRate?: number,       // 采样率 (0-1)，默认 1
@@ -135,14 +135,14 @@ monitor.init({
 
 ```typescript
 // 使用默认值
-monitor.trackPage();
+monitor.trackPage()
 
 // 自定义参数
 monitor.trackPage({
-  path: '/product/123',
-  title: '商品详情页',
-  category: 'product'
-});
+	path: '/product/123',
+	title: '商品详情页',
+	category: 'product',
+})
 ```
 
 ### trackEvent(options)
@@ -151,11 +151,11 @@ monitor.trackPage({
 
 ```typescript
 monitor.trackEvent({
-  name: 'button_click',      // 必填
-  buttonId: 'login-btn',
-  eventCategory: 'auth',
-  eventLabel: '登录按钮'
-});
+	name: 'button_click', // 必填
+	buttonId: 'login-btn',
+	eventCategory: 'auth',
+	eventLabel: '登录按钮',
+})
 ```
 
 ### captureError(error, extra?)
@@ -164,12 +164,12 @@ monitor.trackEvent({
 
 ```typescript
 try {
-  // some code
+	// some code
 } catch (error) {
-  monitor.captureError(error, {
-    module: 'payment',
-    level: 'critical'
-  });
+	monitor.captureError(error, {
+		module: 'payment',
+		level: 'critical',
+	})
 }
 ```
 
@@ -179,10 +179,10 @@ try {
 
 ```typescript
 // 登录后
-monitor.setUser('user-12345');
+monitor.setUser('user-12345')
 
 // 登出时
-monitor.clearUser();
+monitor.clearUser()
 ```
 
 ### flush()
@@ -190,7 +190,7 @@ monitor.clearUser();
 立即上报队列中的事件。
 
 ```typescript
-monitor.flush();
+monitor.flush()
 ```
 
 ### getStats()
@@ -198,7 +198,7 @@ monitor.flush();
 获取统计信息（调试用）。
 
 ```typescript
-const stats = monitor.getStats();
+const stats = monitor.getStats()
 // {
 //   queueSize: 3,
 //   totalEvents: 42,
@@ -209,17 +209,17 @@ const stats = monitor.getStats();
 
 ## 配置选项
 
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `appId` | `string` | - | 必填，应用标识 |
-| `endpoint` | `string` | - | 必填，上报地址 |
-| `userId` | `string` | - | 用户 ID |
-| `sampleRate` | `number` | `1` | 采样率 (0-1) |
-| `maxBatchSize` | `number` | `10` | 批量上报大小 |
-| `uploadInterval` | `number` | `5000` | 上报间隔 (ms) |
-| `enableError` | `boolean` | `true` | 开启错误监控 |
-| `enableBehavior` | `boolean` | `true` | 开启行为埋点 |
-| `debug` | `boolean` | `false` | 调试模式 |
+| 选项             | 类型      | 默认值  | 说明           |
+| ---------------- | --------- | ------- | -------------- |
+| `appId`          | `string`  | -       | 必填，应用标识 |
+| `endpoint`       | `string`  | -       | 必填，上报地址 |
+| `userId`         | `string`  | -       | 用户 ID        |
+| `sampleRate`     | `number`  | `1`     | 采样率 (0-1)   |
+| `maxBatchSize`   | `number`  | `10`    | 批量上报大小   |
+| `uploadInterval` | `number`  | `5000`  | 上报间隔 (ms)  |
+| `enableError`    | `boolean` | `true`  | 开启错误监控   |
+| `enableBehavior` | `boolean` | `true`  | 开启行为埋点   |
+| `debug`          | `boolean` | `false` | 调试模式       |
 
 ## 事件上报协议
 
@@ -234,27 +234,27 @@ Content-Type: application/json
 
 ```json
 {
-  "appId": "your-app-id",
-  "sessionId": "sess-1706542800000-abc123",
-  "events": [
-    {
-      "type": "error",
-      "name": "js_error",
-      "timestamp": 1706542800000,
-      "appId": "your-app-id",
-      "sessionId": "sess-xxx",
-      "userId": "user-123",
-      "url": "https://example.com/page",
-      "referrer": "https://example.com/",
-      "userAgent": "Mozilla/5.0...",
-      "sdkVersion": "0.1.0",
-      "extra": {
-        "message": "xxx is not defined",
-        "stack": "Error: xxx is not defined\n  at...",
-        "errorType": "js"
-      }
-    }
-  ]
+	"appId": "your-app-id",
+	"sessionId": "sess-1706542800000-abc123",
+	"events": [
+		{
+			"type": "error",
+			"name": "js_error",
+			"timestamp": 1706542800000,
+			"appId": "your-app-id",
+			"sessionId": "sess-xxx",
+			"userId": "user-123",
+			"url": "https://example.com/page",
+			"referrer": "https://example.com/",
+			"userAgent": "Mozilla/5.0...",
+			"sdkVersion": "0.1.0",
+			"extra": {
+				"message": "xxx is not defined",
+				"stack": "Error: xxx is not defined\n  at...",
+				"errorType": "js"
+			}
+		}
+	]
 }
 ```
 
@@ -310,28 +310,28 @@ SDK 会自动捕获以下错误，无需手动调用：
 
 ```javascript
 // 会被自动捕获
-throw new Error('Oops!');
-undefinedVariable.property;
+throw new Error('Oops!')
+undefinedVariable.property
 ```
 
 ### Promise 未捕获异常
 
 ```javascript
 // 会被自动捕获
-Promise.reject('Something went wrong');
+Promise.reject('Something went wrong')
 
 fetch('/api').then(res => {
-  throw new Error('Failed');
-});
+	throw new Error('Failed')
+})
 ```
 
 ### 资源加载错误
 
 ```html
 <!-- 会被自动捕获 -->
-<img src="https://invalid-url.com/image.jpg">
+<img src="https://invalid-url.com/image.jpg" />
 <script src="https://invalid-url.com/script.js"></script>
-<link rel="stylesheet" href="https://invalid-url.com/style.css">
+<link rel="stylesheet" href="https://invalid-url.com/style.css" />
 ```
 
 ## 使用示例
@@ -341,87 +341,87 @@ fetch('/api').then(res => {
 ```typescript
 // 商品详情页 PV
 monitor.trackPage({
-  path: '/product/123',
-  title: 'iPhone 15 Pro',
-  category: 'electronics'
-});
+	path: '/product/123',
+	title: 'iPhone 15 Pro',
+	category: 'electronics',
+})
 
 // 加入购物车
 monitor.trackEvent({
-  name: 'add_to_cart',
-  productId: '123',
-  productName: 'iPhone 15 Pro',
-  price: 7999,
-  quantity: 1
-});
+	name: 'add_to_cart',
+	productId: '123',
+	productName: 'iPhone 15 Pro',
+	price: 7999,
+	quantity: 1,
+})
 
 // 订单支付
 monitor.trackEvent({
-  name: 'order_paid',
-  orderId: 'ORD20240129001',
-  amount: 7999,
-  paymentMethod: 'alipay'
-});
+	name: 'order_paid',
+	orderId: 'ORD20240129001',
+	amount: 7999,
+	paymentMethod: 'alipay',
+})
 ```
 
 ### 表单场景
 
 ```typescript
 // 表单提交
-document.querySelector('form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  
-  monitor.trackEvent({
-    name: 'form_submit',
-    formName: 'contact',
-    fields: ['name', 'email', 'message'],
-    eventCategory: 'engagement'
-  });
-  
-  // 提交表单...
-});
+document.querySelector('form').addEventListener('submit', e => {
+	e.preventDefault()
+
+	monitor.trackEvent({
+		name: 'form_submit',
+		formName: 'contact',
+		fields: ['name', 'email', 'message'],
+		eventCategory: 'engagement',
+	})
+
+	// 提交表单...
+})
 
 // 表单验证失败
 monitor.trackEvent({
-  name: 'form_validation_error',
-  formName: 'register',
-  invalidFields: ['email', 'password'],
-  eventCategory: 'error'
-});
+	name: 'form_validation_error',
+	formName: 'register',
+	invalidFields: ['email', 'password'],
+	eventCategory: 'error',
+})
 ```
 
 ### 视频播放场景
 
 ```typescript
-const video = document.querySelector('video');
+const video = document.querySelector('video')
 
 // 播放
 video.addEventListener('play', () => {
-  monitor.trackEvent({
-    name: 'video_play',
-    videoId: 'vid-123',
-    videoTitle: '教程视频',
-    duration: video.duration
-  });
-});
+	monitor.trackEvent({
+		name: 'video_play',
+		videoId: 'vid-123',
+		videoTitle: '教程视频',
+		duration: video.duration,
+	})
+})
 
 // 暂停
 video.addEventListener('pause', () => {
-  monitor.trackEvent({
-    name: 'video_pause',
-    videoId: 'vid-123',
-    currentTime: video.currentTime
-  });
-});
+	monitor.trackEvent({
+		name: 'video_pause',
+		videoId: 'vid-123',
+		currentTime: video.currentTime,
+	})
+})
 
 // 播放完成
 video.addEventListener('ended', () => {
-  monitor.trackEvent({
-    name: 'video_complete',
-    videoId: 'vid-123',
-    watchDuration: video.duration
-  });
-});
+	monitor.trackEvent({
+		name: 'video_complete',
+		videoId: 'vid-123',
+		watchDuration: video.duration,
+	})
+})
 ```
 
 ## 调试模式
@@ -430,13 +430,14 @@ video.addEventListener('ended', () => {
 
 ```typescript
 monitor.init({
-  appId: 'test-app',
-  endpoint: 'https://api.example.com/collect',
-  debug: true  // 👈 开启调试
-});
+	appId: 'test-app',
+	endpoint: 'https://api.example.com/collect',
+	debug: true, // 👈 开启调试
+})
 ```
 
 输出示例：
+
 ```
 [Monitor] SDK initialized { appId: 'test-app', sessionId: 'sess-xxx', version: '0.1.0' }
 [Monitor] Error collector registered
@@ -457,7 +458,7 @@ monitor.init({
 ## 浏览器支持
 
 - Chrome (最新 2 个版本)
-- Edge (最新 2 个版本)  
+- Edge (最新 2 个版本)
 - Firefox (最新 2 个版本)
 - Safari (最新 2 个版本)
 
@@ -468,19 +469,19 @@ monitor.init({
 SDK 提供完整的类型定义：
 
 ```typescript
-import monitor, { 
-  MonitorInitOptions,
-  TrackPageOptions,
-  TrackEventOptions,
-  MonitorStats 
-} from 'cotc-monitor-sdk';
+import monitor, {
+	MonitorInitOptions,
+	TrackPageOptions,
+	TrackEventOptions,
+	MonitorStats,
+} from 'cotc-monitor-sdk'
 
 const options: MonitorInitOptions = {
-  appId: 'app',
-  endpoint: 'https://api.example.com/collect'
-};
+	appId: 'app',
+	endpoint: 'https://api.example.com/collect',
+}
 
-monitor.init(options);
+monitor.init(options)
 ```
 
 ## 更多资源

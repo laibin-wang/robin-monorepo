@@ -11,10 +11,10 @@ COTC Plugins 是一个包含多个高质量 JavaScript/TypeScript 组件的集�
 
 ## 组件列表
 
-| 组件 | 描述 | 版本 |
-|------|------|------|
-| [SignaturePad](/components/signature-pad) | 签名板组件 | 1.0.4 |
-| [MonitorSDK](/components/monitor-sdk) | 前端监控 SDK | 0.1.0 |
+| 组件                                      | 描述         | 版本  |
+| ----------------------------------------- | ------------ | ----- |
+| [SignaturePad](/components/signature-pad) | 签名板组件   | 1.0.4 |
+| [MonitorSDK](/components/monitor-sdk)     | 前端监控 SDK | 0.1.0 |
 
 ## 反馈
 
