@@ -1,0 +1,82 @@
+import { init, dispose } from 'echarts/core'
+import type { ECharts } from 'echarts/core'
+import type { EChartsOption } from 'echarts'
+
+import type { ChartConfig, ChartContext, UpdateOptions } from '../types'
+
+export class Chart {
+  instance: ECharts | null = null
+  container: HTMLElement
+  config: ChartConfig
+  private updateQueue: EChartsOption[] = []
+  private rafId: number | null = null
+  private eventHandlers: Map<string, Set<Function>> = new Map()
+
+  constructor(container: HTMLElement, config: ChartConfig = {}) {
+    this.container = container
+    this.config = {
+      renderer: 'canvas',
+      theme: 'default',
+      autoResize: true,
+      ...config
+    }
+  }
+
+  init(): void {
+    if (this.instance) return
+    
+    this.instance = init(this.container, this.config.theme, {
+      renderer: this.config.renderer,
+      useDirtyRect: true,
+      useCoarsePointer: true
+    })
+  }
+
+  setOption(option: EChartsOption, opts: UpdateOptions ={}): void {
+    this.updateQueue.push(option)
+    
+    if (this.rafId === null) {
+      this.rafId = requestAnimationFrame(() => this.flushUpdate(opts))
+    }
+  }
+
+  private flushUpdate(opts: UpdateOptions): void {
+    if (!this.instance || this.updateQueue.length === 0) {
+      this.rafId = null
+      return
+    }
+
+    const merged = this.updateQueue.reduce((acc, curr) => ({ ...acc, ...curr }), {})
+    this.instance.setOption(merged, {
+      notMerge: opts.notMerge ?? false,
+      lazyUpdate: opts.lazyUpdate ?? false,
+      silent: opts.silent ?? false,
+     })
+    
+    this.updateQueue = []
+    this.rafId = null
+  }
+
+  resize(): void {
+    this.instance?.resize()
+  }
+
+  dispose(): void {
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId)
+      this.rafId = null
+    }
+    if (this.instance) {
+      dispose(this.instance)
+      this.instance = null
+    }
+  }
+
+  getContext(): ChartContext {
+    return {
+      chart: this,
+      setOption: this.setOption.bind(this),
+      resize: this.resize.bind(this)
+    }
+  }
+}

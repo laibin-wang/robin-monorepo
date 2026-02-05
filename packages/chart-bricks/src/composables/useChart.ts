@@ -1,4 +1,5 @@
-import { dispose, init, type ECharts, type EChartsOption } from 'echarts'
+import type { EChartsOption, ResizeOpts } from 'echarts/types/dist/shared'
+
 import {
 	inject,
 	onMounted,
@@ -8,169 +9,74 @@ import {
 	shallowRef,
 	useTemplateRef,
 	type InjectionKey,
-	type Ref,
-	type ShallowRef,
 } from 'vue'
 
-export interface UseChartOptions {
-	/** 主题 */
-	theme?: string | object
-	/** 初始化配置 */
-	initOptions?: {
-		renderer?: 'canvas' | 'svg'
-		locale?: string
-		useDirtyRect?: boolean
-	}
-	/** 更新配置 */
-	updateOptions?: {
-		notMerge?: boolean
-		lazyUpdate?: boolean
-		silent?: boolean
-	}
-	/** 是否自动调整大小 */
-	autoResize?: boolean
-	/** 节流延迟 */
-	resizeDelay?: number
-	/** 数据为空时的处理 */
-	onNoData?: () => void
-}
-export interface ChartContext {
-	chart: ShallowRef<ECharts | null>
-	chartRef: Ref<HTMLElement | null>
-	setOption: (option: EChartsOption) => void
-	getOption: () => EChartsOption
-	resize: () => void
-	dispatchAction: (payload: any) => void
-	on: (event: string, handler: Function) => void
-	off: (event: string, handler: Function) => void
-	showLoading: (opts?: object) => void
-	hideLoading: () => void
-	clear: () => void
-}
+import type { ChartContext, UpdateOptions, UseChartOptions, UseChartReturn } from '../types'
 
-export const ChartContextKey: InjectionKey<ChartContext> = Symbol('ChartContext')
+import { Chart } from '../core/Chart'
+import { ChartManager } from '../core/ChartManager'
 
-export function useChart(options: UseChartOptions = {}) {
-	const {
-		theme = 'default',
-		initOptions = { renderer: 'canvas' },
-		updateOptions = { notMerge: false },
-		autoResize = true,
-		resizeDelay = 100,
-	} = options
+export const ChartKey: InjectionKey<ChartContext> = Symbol('ChartContext')
 
-	const chartRef = useTemplateRef<HTMLElement | null>('chartBrickRef')
-	const chart = shallowRef<ECharts | null>(null)
+export function useChart(options: UseChartOptions = {}): UseChartReturn {
+	const { config = {}, id = Math.random().toString(36).slice(2), onReady, onError } = options
+
+	const containerRef = useTemplateRef<HTMLElement | null>('chartBrickRef')
+	const chart = shallowRef<Chart | null>(null)
 	const isReady = ref(false)
-	const isLoading = ref(false)
+	const error = ref<Error | null>(null)
 
-	const initChart = () => {
-		if (!chartRef.value) return
-		if (chart.value) {
-			dispose(chart.value)
+	const manager = ChartManager.getInstance()
+
+	onMounted(() => {
+		if (!containerRef.value) {
+			error.value = new Error('Container element not found')
+			onError?.(error.value)
+			return
 		}
 
-		chart.value = init(chartRef.value, theme, {
-			...initOptions,
-			useDirtyRect: initOptions.useDirtyRect ?? true,
-		})
+		try {
+			const instance = new Chart(containerRef.value, config)
+			instance.init()
 
-		isReady.value = true
-		bindEvents()
-	}
+			chart.value = instance
+			manager.register(id, instance)
+			isReady.value = true
 
-	let updateQueue: EChartsOption[] = []
-	let rafId: number | null = null
-	const flushUpdate = () => {
-		if (!chart.value || updateQueue.length === 0) return
-
-		const mergedOption = updateQueue.reduce((acc, curr) => merge(acc, curr), {})
-
-		chart.value.setOption(mergedOption, updateOptions)
-		updateQueue = []
-		rafId = null
-	}
-
-	const setOption = (option: EChartsOption) => {
-		updateQueue.push(option)
-
-		if (rafId === null) {
-			rafId = requestAnimationFrame(flushUpdate)
-		}
-	}
-	const resize = debounce(() => {
-		chart.value?.resize()
-	}, resizeDelay)
-
-	if (autoResize) {
-		useResizeObserver(chartRef, () => resize())
-	}
-	const eventHandlers = new Map<string, Set<Function>>()
-
-	const bindEvents = () => {
-		if (!chart.value) return
-
-		eventHandlers.forEach((handlers, event) => {
-			handlers.forEach(handler => {
-				chart.value!.on(event, handler as any)
-			})
-		})
-	}
-
-	const on = (event: string, handler: Function) => {
-		if (!eventHandlers.has(event)) {
-			eventHandlers.set(event, new Set())
-		}
-		eventHandlers.get(event)!.add(handler)
-		chart.value?.on(event, handler as any)
-	}
-
-	const off = (event: string, handler: Function) => {
-		eventHandlers.get(event)?.delete(handler)
-		chart.value?.off(event, handler as any)
-	}
-	onMounted(initChart)
-
-	onUnmounted(() => {
-		if (rafId) cancelAnimationFrame(rafId)
-		if (chart.value) {
-			dispose(chart.value)
-			chart.value = null
+			provide(ChartKey, instance.getContext())
+			onReady?.(instance)
+		} catch (err) {
+			error.value = err instanceof Error ? err : new Error(String(err))
+			onError?.(error.value)
 		}
 	})
 
-	const context: ChartContext = {
-		chart,
-		chartRef: shallowRef(chartRef),
-		setOption,
-		getOption: () => (chart.value?.getOption() as EChartsOption) ?? {},
-		resize,
-		dispatchAction: payload => chart.value?.dispatchAction(payload),
-		on,
-		off,
-		showLoading: opts => {
-			isLoading.value = true
-			chart.value?.showLoading(opts)
-		},
-		hideLoading: () => {
-			isLoading.value = false
-			chart.value?.hideLoading()
-		},
-		clear: () => chart.value?.clear(),
-	}
-
-	provide(ChartContextKey, context)
+	onUnmounted(() => {
+		manager.dispose(id)
+		isReady.value = false
+	})
 
 	return {
+		chartRef: containerRef,
+		chart,
 		isReady,
-		isLoading,
-		...context,
+		error,
+		setOption: (opt: EChartsOption, opts: UpdateOptions = {}) => chart.value?.setOption(opt, opts),
+		resize: (opts: ResizeOpts) => chart.value?.resize(opts),
+		dispatchAction: payload => chart.value?.dispatchAction(payload),
+		on: (event: string, handler: Function) => chart.value?.on(event, handler),
+		off: (event: string, handler: Function) => chart.value?.off(event, handler),
+		showLoading: opts => chart.value?.showLoading(opts),
+		hideLoading: () => chart.value?.hideLoading(),
+		clear: () => chart.value?.clear(),
+		dispose: () => chart.value?.dispose(),
+		getOption: () => chart.value?.getOption(),
 	}
 }
-export function useChartContext() {
-	const context = inject(ChartContextKey)
-	if (!context) {
+export function useChartContext(): ChartContext {
+	const ctx = inject<ChartContext>(ChartKey)
+	if (!ctx) {
 		throw new Error('useChartContext must be used inside a Chart component')
 	}
-	return context
+	return ctx
 }

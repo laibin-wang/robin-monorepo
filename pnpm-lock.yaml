@@ -55,8 +55,6 @@ importers:
         specifier: ^3.5.27
         version: 3.5.27(typescript@5.9.3)
 
-  packages/monitor-sdk: {}
-
 packages:
 
   '@algolia/abtesting@1.13.0':
