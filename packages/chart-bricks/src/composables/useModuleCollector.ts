@@ -15,7 +15,6 @@ export function createModuleCollector(): {
 			declarations.value.push(declaration)
 		},
 		getAll: () => {
-			// 按优先级排序并去重
 			const sorted = [...declarations.value].sort((a, b) => (b.priority || 0) - (a.priority || 0))
 			const seen = new Set<string>()
 			const result: ModuleName[] = []

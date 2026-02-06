@@ -39,6 +39,7 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	provide(ModuleCollectorKey, collector)
 
 	onMounted(async () => {
+		debugger
 		if (!containerRef.value) {
 			error.value = new Error('Container element not found')
 			onError?.(error.value)

@@ -1,6 +1,7 @@
 import { defineComponent, computed, watch } from 'vue'
 
 import { useChartContext } from '../composables/useChart'
+import { declareModules } from '../composables/useModuleCollector'
 
 export default defineComponent({
 	name: 'Legend',
@@ -15,15 +16,12 @@ export default defineComponent({
 		itemWidth: Number,
 		itemHeight: Number,
 		textStyle: Object,
-		selectedMode: {
-			type: [Boolean, String] as () => boolean | 'single' | 'multiple',
-			default: true,
-		},
 		formatter: Function as any,
 	},
 
 	setup(props) {
 		const ctx = useChartContext()
+		declareModules(['LegendComponent'])
 
 		const option = computed(() => ({
 			legend: {

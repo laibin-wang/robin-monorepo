@@ -150,4 +150,19 @@ export class Chart {
 			this.instance = null
 		}
 	}
+
+	getContext(): ChartContext {
+		return {
+			chart: this,
+			setOption: this.setOption.bind(this),
+			resize: this.resize.bind(this),
+			dispatchAction: this.dispatchAction.bind(this),
+			on: this.on.bind(this),
+			off: this.off.bind(this),
+			showLoading: this.showLoading.bind(this),
+			hideLoading: this.hideLoading.bind(this),
+			clear: this.clear.bind(this),
+			getOption: this.getOption.bind(this),
+		}
+	}
 }

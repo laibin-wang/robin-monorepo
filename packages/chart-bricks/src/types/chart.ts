@@ -59,6 +59,7 @@ export interface ChartContext {
 	hideLoading: () => void
 	clear: () => void
 	getOption: () => any
+	data?: () => void
 }
 
 export interface UseChartOptions {
