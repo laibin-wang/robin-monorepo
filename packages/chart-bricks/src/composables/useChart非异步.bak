@@ -15,31 +15,20 @@ import type { ChartContext, UpdateOptions, UseChartOptions, UseChartReturn } fro
 
 import { Chart } from '../core/Chart'
 import { ChartManager } from '../core/ChartManager'
-import { registerModules, type ModuleName } from '../utils/register'
-import { createModuleCollector, ModuleCollectorKey } from './useModuleCollector'
 
 export const ChartKey: InjectionKey<ChartContext> = Symbol('ChartContext')
 
 export function useChart(options: UseChartOptions = {}): UseChartReturn {
-	const {
-		config = {},
-		initialModules = [],
-		id = Math.random().toString(36).slice(2),
-		onReady,
-		onError,
-	} = options
+	const { config = {}, id = Math.random().toString(36).slice(2), onReady, onError } = options
 
 	const containerRef = useTemplateRef<HTMLElement | null>('chartBrickRef')
 	const chart = shallowRef<Chart | null>(null)
 	const isReady = ref(false)
-	const isLoading = ref(false)
 	const error = ref<Error | null>(null)
 
 	const manager = ChartManager.getInstance()
-	const { collector, modulesRef } = createModuleCollector()
-	provide(ModuleCollectorKey, collector)
 
-	onMounted(async () => {
+	onMounted(() => {
 		if (!containerRef.value) {
 			error.value = new Error('Container element not found')
 			onError?.(error.value)
@@ -47,23 +36,16 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 		}
 
 		try {
-			isLoading.value = true
 			const instance = new Chart(containerRef.value, config)
-			const declaredModules = collector.getAll()
-			const allModules = [...new Set([...initialModules, ...declaredModules])]
-			instance.require(...allModules)
-
-			await instance.init()
+			instance.init()
 
 			chart.value = instance
 			manager.register(id, instance)
 			isReady.value = true
-			isLoading.value = false
 
 			provide(ChartKey, instance.getContext())
 			onReady?.(instance)
 		} catch (err) {
-			isLoading.value = false
 			error.value = err instanceof Error ? err : new Error(String(err))
 			onError?.(error.value)
 		}
@@ -71,7 +53,6 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 
 	onUnmounted(() => {
 		manager.dispose(id)
-		chart.value?.dispose()
 		isReady.value = false
 	})
 
@@ -79,7 +60,6 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 		chartRef: containerRef,
 		chart,
 		isReady,
-		isLoading,
 		error,
 		setOption: (opt: EChartsOption, opts: UpdateOptions = {}) => chart.value?.setOption(opt, opts),
 		resize: (opts: ResizeOpts) => chart.value?.resize(opts),

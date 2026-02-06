@@ -11,7 +11,7 @@ import type { ChartConfig, ChartContext, UpdateOptions } from '../types'
 
 import { registerModules, type ModuleName } from '../utils/register'
 
-export class Chart {
+export class AsyncChart {
 	instance: EChartsType | null = null
 	container: HTMLElement
 	config: ChartConfig
@@ -34,6 +34,8 @@ export class Chart {
 			...config,
 		}
 	}
+
+	// 声明需要的模块（由子组件调用）
 	require(...modules: ModuleName[]): this {
 		if (this.instance) {
 			console.warn('Cannot add modules after chart is initialized')
@@ -43,12 +45,17 @@ export class Chart {
 		return this
 	}
 
+	// 异步初始化
 	async init(): Promise<void> {
-		if (this.instance || this.isRegistering) this.isRegistering = true
+		if (this.instance || this.isRegistering) return
 
+		this.isRegistering = true
+
+		// 始终需要渲染器
 		const rendererName = this.config.renderer === 'svg' ? 'svg' : 'canvas'
 		this.requiredModules.add(rendererName as ModuleName)
 
+		// 异步注册所有模块
 		this.registrationPromise = registerModules([...this.requiredModules])
 		await this.registrationPromise
 
@@ -63,6 +70,7 @@ export class Chart {
 		this.isRegistering = false
 	}
 
+	// 等待初始化完成
 	async ready(): Promise<void> {
 		if (this.instance) return
 		if (this.registrationPromise) {
@@ -82,10 +90,7 @@ export class Chart {
 	}
 
 	private flushUpdate(opts: UpdateOptions): void {
-		if (!this.instance || this.updateQueue.length === 0) {
-			this.rafId = null
-			return
-		}
+		if (!this.instance) return
 
 		const merged = this.updateQueue.reduce((acc, curr) => ({ ...acc, ...curr }), {})
 		this.instance.setOption(merged, {
@@ -130,6 +135,7 @@ export class Chart {
 	clear(): void {
 		this.instance?.clear()
 	}
+
 	getOption(): ECBasicOption | undefined {
 		return this.instance?.getOption()
 	}
@@ -141,7 +147,7 @@ export class Chart {
 		}
 
 		this.eventHandlers.forEach((handlers, event) => {
-			handlers.forEach(handler => this.instance?.off(event, handler as any))
+			handlers.forEach(h => this.instance?.off(event, h as any))
 		})
 		this.eventHandlers.clear()
 

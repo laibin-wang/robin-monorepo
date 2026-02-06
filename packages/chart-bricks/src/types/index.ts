@@ -3,6 +3,7 @@ import { DataItem } from './chart'
 export * from './chart'
 export * from './theme'
 export * from './events'
+export * from './register'
 
 export type AggregationMethod = 'sum' | 'avg' | 'max' | 'min' | 'count' | 'first' | 'last'
 

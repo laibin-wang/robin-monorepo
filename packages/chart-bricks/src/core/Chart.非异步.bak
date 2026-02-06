@@ -9,8 +9,6 @@ import { init, dispose } from 'echarts/core'
 
 import type { ChartConfig, ChartContext, UpdateOptions } from '../types'
 
-import { registerModules, type ModuleName } from '../utils/register'
-
 export class Chart {
 	instance: EChartsType | null = null
 	container: HTMLElement
@@ -18,9 +16,6 @@ export class Chart {
 	private updateQueue: EChartsOption[] = []
 	private rafId: number | null = null
 	private eventHandlers: Map<string, Set<Function>> = new Map()
-	private requiredModules: Set<ModuleName> = new Set()
-	private isRegistering = false
-	private registrationPromise: Promise<void> | null = null
 
 	constructor(container: HTMLElement, config: ChartConfig = {}) {
 		this.container = container
@@ -28,53 +23,22 @@ export class Chart {
 			renderer: 'canvas',
 			theme: 'default',
 			autoResize: true,
-			useDirtyRect: true,
-			useCoarsePointer: true,
-			pointerSize: 20,
 			...config,
 		}
 	}
-	require(...modules: ModuleName[]): this {
-		if (this.instance) {
-			console.warn('Cannot add modules after chart is initialized')
-			return this
-		}
-		modules.forEach(m => this.requiredModules.add(m))
-		return this
-	}
 
-	async init(): Promise<void> {
-		if (this.instance || this.isRegistering) this.isRegistering = true
-
-		const rendererName = this.config.renderer === 'svg' ? 'svg' : 'canvas'
-		this.requiredModules.add(rendererName as ModuleName)
-
-		this.registrationPromise = registerModules([...this.requiredModules])
-		await this.registrationPromise
+	init(): void {
+		if (this.instance) return
 
 		this.instance = init(this.container, this.config.theme, {
 			renderer: this.config.renderer,
-			useDirtyRect: this.config.useDirtyRect,
-			useCoarsePointer: this.config.useCoarsePointer,
-			pointerSize: this.config.pointerSize,
-			locale: this.config.locale,
+			useDirtyRect: true,
+			useCoarsePointer: true,
 		})
-
-		this.isRegistering = false
-	}
-
-	async ready(): Promise<void> {
-		if (this.instance) return
-		if (this.registrationPromise) {
-			await this.registrationPromise
-		}
 	}
 
 	setOption(option: EChartsOption, opts: UpdateOptions = {}): void {
-		if (!this.instance) {
-			this.updateQueue.push(option)
-			return
-		}
+		this.updateQueue.push(option)
 
 		if (this.rafId === null) {
 			this.rafId = requestAnimationFrame(() => this.flushUpdate(opts))
