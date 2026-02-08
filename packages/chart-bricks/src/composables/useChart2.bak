@@ -1,7 +1,6 @@
 import type { EChartsOption, ResizeOpts } from 'echarts/types/dist/shared'
 
 import {
-	computed,
 	inject,
 	onMounted,
 	onUnmounted,
@@ -10,98 +9,65 @@ import {
 	ref,
 	shallowRef,
 	useTemplateRef,
-	watch,
 	type InjectionKey,
 } from 'vue'
 
-import type {
-	CartesianGridOption,
-	ChartContext,
-	UpdateOptions,
-	UseChartOptions,
-	UseChartReturn,
-} from '../types'
+import type { ChartContext, UpdateOptions, UseChartOptions, UseChartReturn } from '../types'
 
 import { Chart } from '../core/Chart'
 import { ChartManager } from '../core/ChartManager'
-import { generateId } from '../utils/chartHelpers'
-import { debounce } from '../utils/debounce'
 import { createModuleCollector, ModuleCollectorKey } from './useModuleCollector'
+import { generateId } from '../utils/chartHelpers'
 
 export const ChartKey: InjectionKey<Partial<ChartContext>> = Symbol('ChartContext')
 
 export function useChart(options: UseChartOptions = {}): UseChartReturn {
-	const { config = {}, initialModules = [], id = generateId('ins'), onReady, onError } = options
+	const {
+		config = {},
+		initialModules = [],
+		id = generateId('ins'),
+		onReady,
+		onError
+	} = options
 
 	const containerRef = useTemplateRef<HTMLElement | null>('chartBrickRef')
 	const chart = shallowRef<Chart | null>(null)
 	const isReady = ref(false)
 	const isLoading = ref(false)
 	const error = ref<Error | null>(null)
-
-	const componentOptions = reactive(new Map<string, { type: any; option: any }>())
-
-	const optionState = computed<EChartsOption>(() => {
-		const result: EChartsOption = {}
-		const groupedOptions = new Map<string, any[]>()
-
-		componentOptions.forEach(({ type, option }) => {
-			if (!groupedOptions.has(type)) {
-				groupedOptions.set(type, [])
-			}
-			groupedOptions.get(type)!.push(option)
-		})
-
-		groupedOptions.forEach((optionsArray, type) => {
-			if (type === 'cartesianGrid') {
-				const gridOption = optionsArray[0] as CartesianGridOption
-				if (gridOption.xAxis) result.xAxis = gridOption.xAxis
-				if (gridOption.yAxis) result.yAxis = gridOption.yAxis
-				if (gridOption.grid) result.grid = gridOption.grid
-			} else {
-				;(result as any)[type] = optionsArray.length === 1 ? optionsArray[0] : optionsArray
-			}
-		})
-
-		return result
-	})
+	const optionState = reactive<EChartsOption>({})
 
 	const manager = ChartManager.getInstance()
 	const { collector } = createModuleCollector()
-
 	provide(ModuleCollectorKey, collector)
-
 	provide(ChartKey, {
 		chart: chart,
-		setOptionByOne: (componentId, type, option) => {
-			if (!option) return
-
-			componentOptions.set(componentId, { type, option })
-			console.log('setOptionByOne', componentId, type, componentOptions)
+		setOptionByOne: (id, type, option) => {
+			if(!option) return
+			// 判断type 是否在 optionState 中，如果在，则直接赋值，如果不在，则新增一个属性
+			if (type in optionState) {
+				// 判断是否有 _rcb_id 属性，如果有，则说明是同一个组件的属性，则直接赋值，如果没有，则新增一个属性
+				const inx = (optionState[type] as any[]).findIndex(item => item._rcb_id === id)
+				if (inx > -1) {
+					(optionState[type] as any[])[inx] = {...option, _rcb_id: id }
+				} else {
+					(optionState[type] as any[]).push({...option, _rcb_id: id })
+				}
+			} else {
+				optionState[type] = [{...option, _rcb_id: id }]
+			}
+			console.log('setOptionByOne', id, type, optionState)
 		},
 		setCartesianGrid: opt => {
-			const componentId = generateId('cartesianGrid')
-			componentOptions.set(componentId, { type: 'cartesianGrid', option: opt })
-			console.log('setCartesianGrid', componentId, opt)
-		},
-	})
-
-	const updateChart = debounce(() => {
-		if (chart.value && isReady.value) {
-			chart.value.setOption(optionState.value, { notMerge: false })
+			optionState.yAxis = opt.yAxis
+			optionState.grid = opt.grid
+			optionState.xAxis = opt.xAxis
+			console.log('setCartesianGrid', optionState)
 		}
 	})
 
-	watch(
-		optionState,
-		() => {
-			updateChart()
-			console.log('optionState-watch', optionState)
-		},
-		{ deep: true },
-	)
 
-	const initChart = async () => {
+	onMounted(async () => {
 		if (!containerRef.value) {
 			error.value = new Error('Container element not found')
 			onError?.(error.value)
@@ -111,14 +77,11 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 		try {
 			isLoading.value = true
 			const instance = new Chart(containerRef.value, config)
-
-			// 收集所有需要的模块
 			const declaredModules = collector.getAll()
 			const allModules = [...new Set([...initialModules, ...declaredModules])]
-			console.log('Loading modules:', allModules)
-
-			// 按需加载模块
+			console.log('allModules', allModules)
 			instance.require(...allModules)
+
 			await instance.init()
 
 			chart.value = instance
@@ -126,29 +89,19 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			isReady.value = true
 			isLoading.value = false
 
-			// 初始设置选项
-			if (componentOptions.size > 0) {
-				instance.setOption(optionState.value, { notMerge: false })
-			}
-
-			console.log('Chart initialized successfully', instance.getOption())
 			onReady?.(instance)
+			instance.setOption(optionState as EChartsOption, {})
+			console.log('optionState-getOption', instance.getOption())
 		} catch (err) {
 			isLoading.value = false
 			error.value = err instanceof Error ? err : new Error(String(err))
-			console.error('Chart initialization failed:', error.value)
 			onError?.(error.value)
 		}
-	}
-
-	onMounted(() => {
-		initChart()
 	})
 
 	onUnmounted(() => {
 		manager.dispose(id)
 		chart.value?.dispose()
-		updateChart.cancel()
 		isReady.value = false
 	})
 

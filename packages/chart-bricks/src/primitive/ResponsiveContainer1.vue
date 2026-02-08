@@ -1,17 +1,15 @@
 <template>
 	<div ref="containerRef" class="rcb-responsive-container">
-		<div ref="chartBrickRef" class="rcb-chart-wrapper" :style="wrapperStyle">
+		<div ref="chartRef" class="rcb-chart-wrapper" :style="wrapperStyle">
 			<slot />
 		</div>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, useTemplateRef, watch } from 'vue'
-import { get, useElementSize } from '@vueuse/core'
-import { useChart } from '../composables/useChart'
+import { ref, computed } from 'vue'
+import { useElementSize } from '@vueuse/core'
 import type { CSSProperties } from 'vue'
-import { debounce } from '../utils/debounce'
 
 interface Props {
 	width?: string | number
@@ -28,7 +26,8 @@ const props = withDefaults(defineProps<Props>(), {
 	debounce: 100,
 })
 
-const containerRef = useTemplateRef<HTMLElement>('containerRef')
+const containerRef = ref<HTMLElement>()
+const chartRef = ref<HTMLElement>()
 
 const { width: containerWidth, height: containerHeight } = useElementSize(containerRef)
 
@@ -50,24 +49,6 @@ const wrapperStyle = computed<CSSProperties>(() => {
 	}
 })
 
-const { chart, chartRef, resize } = useChart({
-	initialModules: ['BarChart'],
-})
-
-const debouncedResize = debounce((size: { width: number; height: number }) => {
-	resize(size)
-}, props.debounce)
-
-watch([containerWidth, containerHeight], ([width, height]) => {
-	if (width > 0 && height > 0) {
-		debouncedResize({ width, height })
-	}
-})
-
-onUnmounted(() => {
-	debouncedResize.cancel()
-})
-
 defineExpose({
 	containerRef,
 	chartRef,
@@ -75,7 +56,6 @@ defineExpose({
 		width: containerWidth.value,
 		height: containerHeight.value,
 	}),
-	getChart: () => chart.value,
 })
 </script>
 

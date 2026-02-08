@@ -7,7 +7,7 @@ import type {
 
 import { init, dispose } from 'echarts/core'
 
-import type { ChartConfig, ChartContext, UpdateOptions } from '../types'
+import type { ChartConfig, UpdateOptions } from '../types'
 
 import { registerModules, type ModuleName } from '../utils/register'
 
@@ -50,6 +50,7 @@ export class Chart {
 		this.requiredModules.add(rendererName as ModuleName)
 
 		this.registrationPromise = registerModules([...this.requiredModules])
+		console.log('registering modules', this.requiredModules)
 		await this.registrationPromise
 
 		this.instance = init(this.container, this.config.theme, {
@@ -71,10 +72,12 @@ export class Chart {
 	}
 
 	setOption(option: EChartsOption, opts: UpdateOptions = {}): void {
-		if (!this.instance) {
-			this.updateQueue.push(option)
-			return
-		}
+		// if (!this.instance) {
+		// 	this.updateQueue.push(option)
+		// 	return
+		// }
+		debugger
+		this.updateQueue.push(option)
 
 		if (this.rafId === null) {
 			this.rafId = requestAnimationFrame(() => this.flushUpdate(opts))
@@ -82,17 +85,29 @@ export class Chart {
 	}
 
 	private flushUpdate(opts: UpdateOptions): void {
+		debugger
 		if (!this.instance || this.updateQueue.length === 0) {
 			this.rafId = null
 			return
 		}
 
 		const merged = this.updateQueue.reduce((acc, curr) => ({ ...acc, ...curr }), {})
-		this.instance.setOption(merged, {
-			notMerge: opts.notMerge ?? false,
-			lazyUpdate: opts.lazyUpdate ?? false,
-			silent: opts.silent ?? false,
-		})
+		this.instance.setOption(
+			{
+				...merged,
+				series: [
+					{
+						data: [120, 200, 150, 80, 70, 110, 130],
+						type: 'bar',
+					},
+				],
+			},
+			{
+				notMerge: opts.notMerge ?? false,
+				lazyUpdate: opts.lazyUpdate ?? false,
+				silent: opts.silent ?? false,
+			},
+		)
 
 		this.updateQueue = []
 		this.rafId = null

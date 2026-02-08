@@ -1,49 +1,67 @@
-import { defineComponent, computed, watch } from 'vue'
+import type { YAXisComponentOption } from 'echarts/types/dist/option'
+
+import { defineComponent, computed, watch, type PropType } from 'vue'
 
 import { useChartContext } from '../composables/useChart'
+import { declareModules } from '../composables/useModuleCollector'
+import { generateId } from '../utils/chartHelpers'
 
 export default defineComponent({
 	name: 'YAxis',
 
 	props: {
-		dataKey: String,
-		type: { type: String as () => 'category' | 'value' | 'time' | 'log', default: 'value' },
-		position: { type: String as () => 'left' | 'right', default: 'left' },
-		name: String,
-		nameLocation: { type: String as () => 'start' | 'center' | 'end', default: 'end' },
-		nameGap: Number,
-		min: [Number, String, Function] as any,
-		max: [Number, String, Function] as any,
-		interval: [Number, Function] as any,
-		axisLine: Object,
-		axisTick: Object,
-		axisLabel: Object,
-		splitLine: Object,
-		splitArea: Object,
+		type: {
+			type: String as PropType<YAXisComponentOption['type']>,
+			default: 'value',
+		},
+		config: {
+			type: Object as PropType<YAXisComponentOption>,
+			default: () => ({}),
+		},
+		name: String as PropType<YAXisComponentOption['name']>,
+		position: {
+			type: String as PropType<YAXisComponentOption['position']>,
+			default: 'left',
+		},
+		nameLocation: {
+			type: String as PropType<YAXisComponentOption['nameLocation']>,
+			default: 'end',
+		},
+		nameGap: Number as PropType<YAXisComponentOption['nameGap']>,
+		min: [Number, String, Function] as PropType<YAXisComponentOption['min']>,
+		max: [Number, String, Function] as PropType<YAXisComponentOption['max']>,
+		interval: Number,
 	},
 
 	setup(props) {
+		const componentFlag = 'yAxis'
+		const componentId = generateId(componentFlag)
 		const ctx = useChartContext()
+		declareModules(['GridComponent'])
 
-		const option = computed(() => ({
-			yAxis: {
-				type: props.type,
-				position: props.position,
-				name: props.name,
-				nameLocation: props.nameLocation,
-				nameGap: props.nameGap,
-				min: props.min,
-				max: props.max,
-				interval: props.interval,
-				axisLine: props.axisLine,
-				axisTick: props.axisTick,
-				axisLabel: props.axisLabel,
-				splitLine: props.splitLine,
-				splitArea: props.splitArea,
-			},
-		}))
+		const options = computed(() => {
+			const { config, ...restProps } = props
 
-		watch(option, opt => ctx.setOption(opt), { immediate: true, deep: true })
+			const baseOptions: Partial<YAXisComponentOption> = {
+				id: componentId,
+			}
+
+			Object.keys(restProps).forEach(key => {
+				const value = restProps[key as keyof typeof restProps]
+				if (value !== undefined && key !== 'config') {
+					;(baseOptions as any)[key] = value
+				}
+			})
+			return {
+				...baseOptions,
+				...config,
+			} as YAXisComponentOption
+		})
+
+		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {
+			immediate: true,
+			flush: 'post',
+		})
 
 		return () => null
 	},

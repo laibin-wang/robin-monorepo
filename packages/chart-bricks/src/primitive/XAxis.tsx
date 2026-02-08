@@ -1,49 +1,54 @@
-import { defineComponent, computed, watch } from 'vue'
+import type { XAXisComponentOption } from 'echarts/types/dist/option'
+
+import { defineComponent, computed, watch, type PropType } from 'vue'
 
 import { useChartContext } from '../composables/useChart'
+import { declareModules } from '../composables/useModuleCollector'
+import { generateId } from '../utils/chartHelpers'
 
 export default defineComponent({
 	name: 'XAxis',
 
 	props: {
-		dataKey: String,
-		type: { type: String as () => 'category' | 'value' | 'time' | 'log', default: 'category' },
-		position: { type: String as () => 'top' | 'bottom', default: 'bottom' },
-		name: String,
-		nameLocation: { type: String as () => 'start' | 'center' | 'end', default: 'end' },
-		nameGap: Number,
-		min: [Number, String, Function] as any,
-		max: [Number, String, Function] as any,
-		interval: [Number, Function] as any,
-		axisLine: Object,
-		axisTick: Object,
-		axisLabel: Object,
-		splitLine: Object,
-		splitArea: Object,
+		type: {
+			type: String as PropType<XAXisComponentOption['type']>,
+			default: 'category',
+		},
+		config: {
+			type: Object as PropType<XAXisComponentOption>,
+			default: () => ({}),
+		},
 	},
 
 	setup(props) {
+		const componentFlag = 'xAxis'
+		const componentId = generateId(componentFlag)
 		const ctx = useChartContext()
+		declareModules(['GridComponent'])
 
-		const option = computed(() => ({
-			xAxis: {
-				type: props.type,
-				position: props.position,
-				name: props.name,
-				nameLocation: props.nameLocation,
-				nameGap: props.nameGap,
-				min: props.min,
-				max: props.max,
-				interval: props.interval,
-				axisLine: props.axisLine,
-				axisTick: props.axisTick,
-				axisLabel: props.axisLabel,
-				splitLine: props.splitLine,
-				splitArea: props.splitArea,
-			},
-		}))
+		const options = computed(() => {
+			const { config, ...restProps } = props
 
-		watch(option, opt => ctx.setOption(opt), { immediate: true, deep: true })
+			const baseOptions: Partial<XAXisComponentOption> = {
+				id: componentId,
+			}
+
+			Object.keys(restProps).forEach(key => {
+				const value = restProps[key as keyof typeof restProps]
+				if (value !== undefined && key !== 'config') {
+					;(baseOptions as any)[key] = value
+				}
+			})
+			return {
+				...baseOptions,
+				...config,
+			} as XAXisComponentOption
+		})
+
+		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {
+			immediate: true,
+			flush: 'post',
+		})
 
 		return () => null
 	},

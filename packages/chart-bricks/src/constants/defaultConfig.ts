@@ -1,3 +1,5 @@
+import type { XAXisComponentOption, YAXisComponentOption } from 'echarts/types/dist/option'
+
 import type { ChartConfig } from '../types'
 
 export const DEFAULT_CHART_CONFIG: ChartConfig = {
@@ -39,3 +41,17 @@ export const DEFAULT_BREAKPOINTS = [
 	{ name: 'tablet', min: 769, max: 1024 },
 	{ name: 'desktop', min: 1025 },
 ]
+
+export const DEFAULT_GRID_CONFIG = {
+	left: '3%',
+	right: '4%',
+	bottom: '3%',
+}
+export const DEFAULT_XAXIS_CONFIG = {
+	type: 'category',
+	show: true,
+}
+export const DEFAULT_YAXIS_CONFIG = {
+	type: 'value',
+	show: true,
+}

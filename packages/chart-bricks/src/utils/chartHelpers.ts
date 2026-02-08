@@ -71,3 +71,7 @@ export function pick<T extends object, K extends keyof T>(obj: T, keys: K[]): Pi
 	})
 	return result
 }
+
+export function generateId(prefix = 'chart'): string {
+	return `${prefix}-${Math.random().toString(36).substring(2, 9)}`
+}
