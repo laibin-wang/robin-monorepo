@@ -10,24 +10,16 @@ export default defineComponent({
 	name: 'Tooltip',
 
 	props: {
+		trigger: {
+			type: String as PropType<TooltipComponentOption['trigger']>,
+			default: 'item',
+		},
+		formatter: [String, Function] as PropType<TooltipComponentOption['formatter']>,
+
 		config: {
 			type: Object as PropType<TooltipComponentOption>,
 			default: () => ({}),
 		},
-		trigger: { type: String as () => 'item' | 'axis' | 'none', default: 'item' },
-		formatter: [String, Function] as any,
-		position: [String, Array, Function] as any,
-		backgroundColor: String,
-		borderColor: String,
-		borderWidth: Number,
-		padding: [Number, Array] as any,
-		textStyle: Object,
-		extraCssText: String,
-		enterable: Boolean,
-		confine: Boolean,
-		showDelay: Number,
-		hideDelay: Number,
-		transitionDuration: Number,
 	},
 
 	setup(props) {
@@ -39,8 +31,8 @@ export default defineComponent({
 		const options = computed(() => {
 			const { config, ...restProps } = props
 
-			const baseOptions: Partial<TooltipComponentOption> = {
-				id: componentId,
+			const baseOptions: Partial<TooltipComponentOption & { _rcb_id: string }> = {
+				_rcb_id: componentId,
 			}
 
 			Object.keys(restProps).forEach(key => {

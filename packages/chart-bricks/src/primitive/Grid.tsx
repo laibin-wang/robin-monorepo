@@ -1,4 +1,4 @@
-import type { XAXisOption } from 'echarts/types/dist/shared'
+import type { GridComponentOption } from 'echarts/types/dist/option'
 
 import { defineComponent, computed, watch, type PropType } from 'vue'
 
@@ -7,21 +7,22 @@ import { declareModules } from '../composables/useModuleCollector'
 import { generateId } from '../utils/chartHelpers'
 
 export default defineComponent({
-	name: 'XAxis',
+	name: 'Grid',
 
 	props: {
-		type: {
-			type: String as PropType<XAXisOption['type']>,
-			default: 'category',
-		},
+		top: [String, Number],
+		bottom: [String, Number],
+		right: [String, Number],
+		left: [String, Number],
+
 		config: {
-			type: Object as PropType<XAXisOption>,
+			type: Object as PropType<GridComponentOption>,
 			default: () => ({}),
 		},
 	},
 
 	setup(props) {
-		const componentFlag = 'xAxis'
+		const componentFlag = 'grid'
 		const componentId = generateId(componentFlag)
 		const ctx = useChartContext()
 		declareModules(['GridComponent'])
@@ -29,7 +30,7 @@ export default defineComponent({
 		const options = computed(() => {
 			const { config, ...restProps } = props
 
-			const baseOptions: Partial<XAXisOption & { _rcb_id: string }> = {
+			const baseOptions: Partial<GridComponentOption & { _rcb_id: string }> = {
 				_rcb_id: componentId,
 			}
 
@@ -42,7 +43,7 @@ export default defineComponent({
 			return {
 				...baseOptions,
 				...config,
-			} as XAXisOption
+			} as GridComponentOption
 		})
 
 		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {

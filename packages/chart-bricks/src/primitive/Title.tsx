@@ -1,4 +1,4 @@
-import type { XAXisOption } from 'echarts/types/dist/shared'
+import type { TitleComponentOption } from 'echarts/types/dist/option'
 
 import { defineComponent, computed, watch, type PropType } from 'vue'
 
@@ -7,29 +7,28 @@ import { declareModules } from '../composables/useModuleCollector'
 import { generateId } from '../utils/chartHelpers'
 
 export default defineComponent({
-	name: 'XAxis',
+	name: 'Title',
 
 	props: {
-		type: {
-			type: String as PropType<XAXisOption['type']>,
-			default: 'category',
-		},
+		text: String,
+		subtext: String,
+		textAlign: String as PropType<TitleComponentOption['textAlign']>,
 		config: {
-			type: Object as PropType<XAXisOption>,
+			type: Object as PropType<TitleComponentOption>,
 			default: () => ({}),
 		},
 	},
 
 	setup(props) {
-		const componentFlag = 'xAxis'
+		const componentFlag = 'title'
 		const componentId = generateId(componentFlag)
 		const ctx = useChartContext()
-		declareModules(['GridComponent'])
+		declareModules(['TitleComponent'])
 
 		const options = computed(() => {
 			const { config, ...restProps } = props
 
-			const baseOptions: Partial<XAXisOption & { _rcb_id: string }> = {
+			const baseOptions: Partial<TitleComponentOption & { _rcb_id: string }> = {
 				_rcb_id: componentId,
 			}
 
@@ -42,7 +41,7 @@ export default defineComponent({
 			return {
 				...baseOptions,
 				...config,
-			} as XAXisOption
+			} as TitleComponentOption
 		})
 
 		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {

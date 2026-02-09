@@ -14,16 +14,8 @@ export default defineComponent({
 			type: Object as PropType<LegendComponentOption>,
 			default: () => ({}),
 		},
-		data: Array as any,
-		orient: { type: String as () => 'horizontal' | 'vertical', default: 'horizontal' },
-		position: { type: String as () => 'top' | 'bottom' | 'left' | 'right', default: 'top' },
-		align: { type: String as () => 'auto' | 'left' | 'right', default: 'auto' },
-		padding: [Number, Array] as any,
-		itemGap: Number,
-		itemWidth: Number,
-		itemHeight: Number,
-		textStyle: Object,
-		formatter: Function as any,
+		data: Array as PropType<LegendComponentOption['data']>,
+		formatter: [String, Function] as PropType<LegendComponentOption['formatter']>,
 	},
 
 	setup(props) {
@@ -35,8 +27,8 @@ export default defineComponent({
 		const options = computed(() => {
 			const { config, ...restProps } = props
 
-			const baseOptions: Partial<LegendComponentOption> = {
-				id: componentId,
+			const baseOptions: Partial<LegendComponentOption & { _rcb_id: string }> = {
+				_rcb_id: componentId,
 			}
 
 			Object.keys(restProps).forEach(key => {

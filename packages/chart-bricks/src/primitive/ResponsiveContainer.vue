@@ -7,11 +7,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, useTemplateRef, watch } from 'vue'
-import { get, useElementSize } from '@vueuse/core'
+import { computed, onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from 'vue'
+import { useResizeObserver } from '@vueuse/core'
 import { useChart } from '../composables/useChart'
 import type { CSSProperties } from 'vue'
-import { debounce } from '../utils/debounce'
+import { createOptimizedResizeHandler } from '../utils/resizeOptimizer'
 
 interface Props {
 	width?: string | number
@@ -22,60 +22,103 @@ interface Props {
 	maxWidth?: number
 	maxHeight?: number
 	debounce?: number
+	throttle?: number
+	immediate?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	debounce: 100,
+	throttle: 0, // 0表示不使用节流
+	immediate: false,
 })
 
 const containerRef = useTemplateRef<HTMLElement>('containerRef')
 
-const { width: containerWidth, height: containerHeight } = useElementSize(containerRef)
-
 const wrapperStyle = computed<CSSProperties>(() => {
-	let width = props.width
-	let height = props.height
+	const { width, height, aspect, minWidth, minHeight, maxWidth, maxHeight } = props
 
-	if (props.aspect && containerWidth.value) {
-		height = containerWidth.value / props.aspect
+	let computedWidth = width
+	let computedHeight = height
+
+	if (aspect && computedWidth) {
+		if (typeof computedWidth === 'number') {
+			computedHeight = computedWidth / aspect
+		} else if (typeof computedWidth === 'string' && computedWidth.endsWith('%')) {
+			// 如果是百分比，保持百分比
+			computedHeight = 'auto'
+		}
 	}
 
 	return {
-		width: typeof width === 'number' ? `${width}px` : width || '100%',
-		height: typeof height === 'number' ? `${height}px` : height || '100%',
-		minWidth: props.minWidth ? `${props.minWidth}px` : undefined,
-		minHeight: props.minHeight ? `${props.minHeight}px` : undefined,
-		maxWidth: props.maxWidth ? `${props.maxWidth}px` : undefined,
-		maxHeight: props.maxHeight ? `${props.maxHeight}px` : undefined,
+		width: typeof computedWidth === 'number' ? `${computedWidth}px` : computedWidth || '100%',
+		height: typeof computedHeight === 'number' ? `${computedHeight}px` : computedHeight || '100%',
+		minWidth: minWidth ? `${minWidth}px` : undefined,
+		minHeight: minHeight ? `${minHeight}px` : undefined,
+		maxWidth: maxWidth ? `${maxWidth}px` : undefined,
+		maxHeight: maxHeight ? `${maxHeight}px` : undefined,
 	}
 })
 
-const { chart, chartRef, resize } = useChart({
-	initialModules: ['BarChart'],
+const {
+	chart,
+	chartRef,
+	resize: chartResize,
+} = useChart({
+	initialModules: [],
 })
 
-const debouncedResize = debounce((size: { width: number; height: number }) => {
-	resize(size)
-}, props.debounce)
-
-watch([containerWidth, containerHeight], ([width, height]) => {
+const optimizedResizeHandler = createOptimizedResizeHandler(
+	(size: { width: number; height: number }) => {
+		chartResize(size)
+	},
+	props.debounce,
+	props.throttle,
+)
+const handleResize = (width: number, height: number) => {
 	if (width > 0 && height > 0) {
-		debouncedResize({ width, height })
+		optimizedResizeHandler({ width, height })
+	}
+}
+
+const { stop: stopResizeObserver } = useResizeObserver(containerRef, entries => {
+	const entry = entries[0]
+	if (!entry) return
+	const { width, height } = entry.contentRect
+	handleResize(width, height)
+})
+// 立即触发一次 resize（如果需要）
+onMounted(() => {
+	if (props.immediate && containerRef.value) {
+		const rect = containerRef.value.getBoundingClientRect()
+		handleResize(rect.width, rect.height)
 	}
 })
 
 onUnmounted(() => {
-	debouncedResize.cancel()
+	stopResizeObserver()
+	optimizedResizeHandler.cancel()
+	optimizedResizeHandler.flush()
 })
 
 defineExpose({
 	containerRef,
 	chartRef,
-	getSize: () => ({
-		width: containerWidth.value,
-		height: containerHeight.value,
-	}),
+	getSize: () => {
+		if (!containerRef.value) return { width: 0, height: 0 }
+		const rect = containerRef.value.getBoundingClientRect()
+		return {
+			width: rect.width,
+			height: rect.height,
+		}
+	},
 	getChart: () => chart.value,
+	forceResize: () => {
+		if (containerRef.value) {
+			const rect = containerRef.value.getBoundingClientRect()
+			handleResize(rect.width, rect.height)
+		}
+	},
+	resizeHandler: optimizedResizeHandler,
 })
 </script>
 
@@ -84,6 +127,7 @@ defineExpose({
 	position: relative;
 	width: 100%;
 	height: 100%;
+	contain: layout style;
 }
 
 .rcb-chart-wrapper {
@@ -91,5 +135,6 @@ defineExpose({
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
+	will-change: transform;
 }
 </style>

@@ -1,29 +1,26 @@
-import type { ECBasicOption, ResizeOpts, EChartsType } from 'echarts/types/dist/shared'
+import type {
+	ECBasicOption,
+	EChartsOption,
+	ResizeOpts,
+	EChartsType,
+} from 'echarts/types/dist/shared'
 
 import { init, dispose } from 'echarts/core'
 
-import type { ChartConfig, EChartsFullOption, UpdateOptions } from '../types'
+import type { ChartConfig, ChartContext, UpdateOptions } from '../types'
 
-import { deepMerge } from '../utils/chartHelpers'
 import { registerModules, type ModuleName } from '../utils/register'
 
 export class Chart {
 	instance: EChartsType | null = null
 	container: HTMLElement
 	config: ChartConfig
-	private performance = {
-		updateCount: 0,
-		lastUpdateTime: 0,
-		averageUpdateTime: 0,
-	}
-	private updateQueue: EChartsFullOption[] = []
+	private updateQueue: EChartsOption[] = []
 	private rafId: number | null = null
 	private eventHandlers: Map<string, Set<Function>> = new Map()
 	private requiredModules: Set<ModuleName> = new Set()
 	private isRegistering = false
 	private registrationPromise: Promise<void> | null = null
-	private pendingEvents: Array<{ type: 'add' | 'remove'; event: string; handler: Function }> = []
-	private isProcessingEvents = false
 
 	constructor(container: HTMLElement, config: ChartConfig = {}) {
 		this.container = container
@@ -53,7 +50,6 @@ export class Chart {
 		this.requiredModules.add(rendererName as ModuleName)
 
 		this.registrationPromise = registerModules([...this.requiredModules])
-		console.log('registering modules', this.requiredModules)
 		await this.registrationPromise
 
 		this.instance = init(this.container, this.config.theme, {
@@ -74,8 +70,11 @@ export class Chart {
 		}
 	}
 
-	setOption(option: EChartsFullOption, opts: UpdateOptions = {}): void {
-		this.updateQueue.push(option)
+	setOption(option: EChartsOption, opts: UpdateOptions = {}): void {
+		if (!this.instance) {
+			this.updateQueue.push(option)
+			return
+		}
 
 		if (this.rafId === null) {
 			this.rafId = requestAnimationFrame(() => this.flushUpdate(opts))
@@ -83,27 +82,20 @@ export class Chart {
 	}
 
 	private flushUpdate(opts: UpdateOptions): void {
-		const startTime = performance.now()
 		if (!this.instance || this.updateQueue.length === 0) {
 			this.rafId = null
 			return
 		}
 
-		const merged: EChartsFullOption = {}
-		for (const option of this.updateQueue) {
-			deepMerge(merged, option)
-		}
-		console.log('merged option', merged)
+		const merged = this.updateQueue.reduce((acc, curr) => ({ ...acc, ...curr }), {})
 		this.instance.setOption(merged, {
 			notMerge: opts.notMerge ?? false,
 			lazyUpdate: opts.lazyUpdate ?? false,
 			silent: opts.silent ?? false,
 		})
 
-		this.updateQueue.length = 0
+		this.updateQueue = []
 		this.rafId = null
-		const duration = performance.now() - startTime
-		this.updatePerformanceMetrics(duration)
 	}
 
 	resize(opts?: ResizeOpts): void {
@@ -111,50 +103,16 @@ export class Chart {
 	}
 
 	on(event: string, handler: Function): void {
-		this.pendingEvents.push({ type: 'add', event, handler })
-		this.scheduleEventProcessing()
-	}
-	private scheduleEventProcessing(): void {
-		if (this.isProcessingEvents || !this.instance) return
-
-		this.isProcessingEvents = true
-		queueMicrotask(() => {
-			const events = [...this.pendingEvents]
-			this.pendingEvents.length = 0
-
-			for (const { type, event, handler } of events) {
-				if (type === 'add') {
-					if (!this.eventHandlers.has(event)) {
-						this.eventHandlers.set(event, new Set())
-					}
-					this.eventHandlers.get(event)!.add(handler)
-					this.instance!.on(event, handler as any)
-				} else {
-					this.eventHandlers.get(event)?.delete(handler)
-					this.instance!.off(event, handler as any)
-				}
-			}
-
-			this.isProcessingEvents = false
-		})
-	}
-	private updatePerformanceMetrics(duration: number): void {
-		this.performance.updateCount++
-		this.performance.averageUpdateTime =
-			(this.performance.averageUpdateTime * (this.performance.updateCount - 1) + duration) /
-			this.performance.updateCount
-
-		if (this.performance.averageUpdateTime > 16) {
-			console.warn(
-				'Chart updates are taking too long:',
-				this.performance.averageUpdateTime.toFixed(2) + 'ms',
-			)
+		if (!this.eventHandlers.has(event)) {
+			this.eventHandlers.set(event, new Set())
 		}
+		this.eventHandlers.get(event)!.add(handler)
+		this.instance?.on(event, handler as any)
 	}
 
 	off(event: string, handler: Function): void {
-		this.pendingEvents.push({ type: 'remove', event, handler })
-		this.scheduleEventProcessing()
+		this.eventHandlers.get(event)?.delete(handler)
+		this.instance?.off(event, handler as any)
 	}
 
 	dispatchAction(payload: any): void {
@@ -189,6 +147,22 @@ export class Chart {
 
 		if (this.instance) {
 			dispose(this.instance)
+			this.instance = null
+		}
+	}
+
+	getContext(): ChartContext {
+		return {
+			chart: this,
+			setOption: this.setOption.bind(this),
+			resize: this.resize.bind(this),
+			dispatchAction: this.dispatchAction.bind(this),
+			on: this.on.bind(this),
+			off: this.off.bind(this),
+			showLoading: this.showLoading.bind(this),
+			hideLoading: this.hideLoading.bind(this),
+			clear: this.clear.bind(this),
+			getOption: this.getOption.bind(this),
 		}
 	}
 }

@@ -1,4 +1,5 @@
 import type {
+	DatasetComponentOption,
 	GridComponentOption,
 	TitleComponentOption,
 	TooltipComponentOption,
@@ -8,9 +9,12 @@ import type {
 import type {
 	BarSeriesOption,
 	BoxplotSeriesOption,
+	CandlestickSeriesOption,
+	ComposeOption,
 	CustomSeriesOption,
 	ECBasicOption,
 	EChartsOption,
+	EffectScatterSeriesOption,
 	FunnelSeriesOption,
 	GaugeSeriesOption,
 	GraphSeriesOption,
@@ -30,6 +34,8 @@ import type {
 	ThemeRiverSeriesOption,
 	TreemapSeriesOption,
 	TreeSeriesOption,
+	XAXisOption,
+	YAXisOption,
 } from 'echarts/types/dist/shared'
 import type { Ref, ShallowRef } from 'vue'
 
@@ -86,6 +92,37 @@ export type SeriesOptionType =
 	| ThemeRiverSeriesOption
 	| CustomSeriesOption
 
+export type EChartsFullOption = ComposeOption<
+	| TitleComponentOption
+	| TooltipComponentOption
+	| GridComponentOption
+	| LegendComponentOption
+	| DatasetComponentOption
+	| XAXisOption
+	| YAXisOption
+	| LineSeriesOption
+	| BarSeriesOption
+	| PieSeriesOption
+	| ScatterSeriesOption
+	| RadarSeriesOption
+	| GaugeSeriesOption
+	| HeatmapSeriesOption
+	| GraphSeriesOption
+	| TreeSeriesOption
+	| TreemapSeriesOption
+	| SunburstSeriesOption
+	| ParallelSeriesOption
+	| SankeySeriesOption
+	| FunnelSeriesOption
+	| BoxplotSeriesOption
+	| CandlestickSeriesOption
+	| EffectScatterSeriesOption
+	| LinesSeriesOption
+	| PictorialBarSeriesOption
+	| ThemeRiverSeriesOption
+	| CustomSeriesOption
+>
+
 export interface ChartConfig {
 	theme?: string | object
 	renderer?: 'canvas' | 'svg'
@@ -119,7 +156,7 @@ export interface UseChartReturn {
 	error: Ref<Error | null>
 	on: (event: string, handler: Function) => void
 	off: (event: string, handler: Function) => void
-	setOption: (option: EChartsOption, opts?: UpdateOptions) => void
+	setOption: (option: EChartsFullOption, opts?: UpdateOptions) => void
 	resize: (opts: ResizeOpts) => void
 	dispatchAction: (payload: any) => void
 	showLoading: (opts?: object) => void
@@ -127,6 +164,7 @@ export interface UseChartReturn {
 	clear: () => void
 	dispose: () => void
 	getOption: () => ECBasicOption | undefined
+	getPerformance: () => void
 }
 
 export interface Breakpoint {

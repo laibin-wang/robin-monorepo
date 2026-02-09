@@ -3,7 +3,7 @@ import type {
 	YAXisComponentOption,
 	XAXisComponentOption,
 } from 'echarts/types/dist/option'
-import type { EChartsOption } from 'echarts/types/dist/shared'
+import type { EChartsOption, XAXisOption, YAXisOption } from 'echarts/types/dist/shared'
 
 import { defineComponent, computed, watch, type PropType } from 'vue'
 
@@ -23,15 +23,15 @@ export default defineComponent({
 
 	props: {
 		grid: {
-			type: [Array, Object] as PropType<EChartsOption['grid']>,
+			type: [Array, Object] as PropType<GridComponentOption | GridComponentOption[]>,
 			default: undefined,
 		},
 		xAxis: {
-			type: [Array, Object] as PropType<EChartsOption['xAxis']>,
+			type: [Array, Object] as PropType<XAXisOption | XAXisOption[]>,
 			default: () => DEFAULT_XAXIS_CONFIG,
 		},
 		yAxis: {
-			type: [Array, Object] as PropType<EChartsOption['yAxis']>,
+			type: [Array, Object] as PropType<YAXisOption | YAXisOption[]>,
 			default: () => DEFAULT_YAXIS_CONFIG,
 		},
 	},
@@ -43,15 +43,17 @@ export default defineComponent({
 		declareModules(['GridComponent', 'UniversalTransition'])
 
 		// 使用类型守卫函数来明确类型
-		const isGridArray = (value: EChartsOption['grid']): value is GridComponentOption[] => {
+		const isGridArray = (
+			value: GridComponentOption | GridComponentOption[],
+		): value is GridComponentOption[] => {
 			return Array.isArray(value)
 		}
 
-		const isXAxisArray = (value: EChartsOption['xAxis']): value is XAXisComponentOption[] => {
+		const isXAxisArray = (value: XAXisOption | XAXisOption[]): value is XAXisOption[] => {
 			return Array.isArray(value)
 		}
 
-		const isYAxisArray = (value: EChartsOption['yAxis']): value is YAXisComponentOption[] => {
+		const isYAxisArray = (value: YAXisOption | YAXisOption[]): value is YAXisOption[] => {
 			return Array.isArray(value)
 		}
 
@@ -71,36 +73,35 @@ export default defineComponent({
 			}
 		})
 
-		const xAxisOptions = computed<XAXisComponentOption | XAXisComponentOption[]>(() => {
+		const xAxisOptions = computed<XAXisOption | XAXisOption[]>(() => {
 			const xAxis = props.xAxis
 
-			const xAxisType = 'category'
 			if (isXAxisArray(xAxis)) {
 				return xAxis.map(item => ({
-					type: 'category',
+					...DEFAULT_XAXIS_CONFIG,
 					...item,
-				}))
+				})) as XAXisOption[]
 			} else {
 				return {
-					type: 'category',
+					...DEFAULT_XAXIS_CONFIG,
 					...xAxis,
-				}
+				} as XAXisOption
 			}
 		})
 
-		const yAxisOptions = computed<YAXisComponentOption | YAXisComponentOption[]>(() => {
+		const yAxisOptions = computed<YAXisOption | YAXisOption[]>(() => {
 			const yAxis = props.yAxis
 
 			if (isYAxisArray(yAxis)) {
 				return yAxis.map(item => ({
-					type: 'value',
+					...DEFAULT_YAXIS_CONFIG,
 					...item,
-				}))
+				})) as YAXisOption[]
 			} else {
 				return {
-					type: 'value',
+					...DEFAULT_YAXIS_CONFIG,
 					...yAxis,
-				}
+				} as YAXisOption
 			}
 		})
 

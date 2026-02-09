@@ -1,4 +1,4 @@
-import type { YAXisComponentOption } from 'echarts/types/dist/option'
+import type { YAXisOption } from 'echarts/types/dist/shared'
 
 import { defineComponent, computed, watch, type PropType } from 'vue'
 
@@ -11,26 +11,13 @@ export default defineComponent({
 
 	props: {
 		type: {
-			type: String as PropType<YAXisComponentOption['type']>,
+			type: String as PropType<YAXisOption['type']>,
 			default: 'value',
 		},
 		config: {
-			type: Object as PropType<YAXisComponentOption>,
+			type: Object as PropType<YAXisOption>,
 			default: () => ({}),
 		},
-		name: String as PropType<YAXisComponentOption['name']>,
-		position: {
-			type: String as PropType<YAXisComponentOption['position']>,
-			default: 'left',
-		},
-		nameLocation: {
-			type: String as PropType<YAXisComponentOption['nameLocation']>,
-			default: 'end',
-		},
-		nameGap: Number as PropType<YAXisComponentOption['nameGap']>,
-		min: [Number, String, Function] as PropType<YAXisComponentOption['min']>,
-		max: [Number, String, Function] as PropType<YAXisComponentOption['max']>,
-		interval: Number,
 	},
 
 	setup(props) {
@@ -42,8 +29,8 @@ export default defineComponent({
 		const options = computed(() => {
 			const { config, ...restProps } = props
 
-			const baseOptions: Partial<YAXisComponentOption> = {
-				id: componentId,
+			const baseOptions: Partial<YAXisOption & { _rcb_id: string }> = {
+				_rcb_id: componentId,
 			}
 
 			Object.keys(restProps).forEach(key => {
@@ -55,7 +42,7 @@ export default defineComponent({
 			return {
 				...baseOptions,
 				...config,
-			} as YAXisComponentOption
+			} as YAXisOption
 		})
 
 		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {

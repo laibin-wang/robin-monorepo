@@ -1,4 +1,4 @@
-import type { XAXisOption } from 'echarts/types/dist/shared'
+import type { BarSeriesOption, TooltipComponentOption } from 'echarts/types/dist/option'
 
 import { defineComponent, computed, watch, type PropType } from 'vue'
 
@@ -7,30 +7,29 @@ import { declareModules } from '../composables/useModuleCollector'
 import { generateId } from '../utils/chartHelpers'
 
 export default defineComponent({
-	name: 'XAxis',
+	name: 'Bar',
 
 	props: {
-		type: {
-			type: String as PropType<XAXisOption['type']>,
-			default: 'category',
-		},
+		name: String,
+		data: Array as PropType<BarSeriesOption['data']>,
+		formatter: [String, Function] as any,
 		config: {
-			type: Object as PropType<XAXisOption>,
+			type: Object as PropType<BarSeriesOption>,
 			default: () => ({}),
 		},
 	},
 
 	setup(props) {
-		const componentFlag = 'xAxis'
+		const componentFlag = 'bar'
 		const componentId = generateId(componentFlag)
 		const ctx = useChartContext()
-		declareModules(['GridComponent'])
+		declareModules(['BarChart'])
 
 		const options = computed(() => {
 			const { config, ...restProps } = props
 
-			const baseOptions: Partial<XAXisOption & { _rcb_id: string }> = {
-				_rcb_id: componentId,
+			const baseOptions: Partial<BarSeriesOption> = {
+				id: componentId,
 			}
 
 			Object.keys(restProps).forEach(key => {
@@ -42,10 +41,11 @@ export default defineComponent({
 			return {
 				...baseOptions,
 				...config,
-			} as XAXisOption
+				type: 'bar',
+			} as BarSeriesOption
 		})
 
-		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {
+		watch(options, opt => ctx.setOptionByOne(componentId, 'series', opt), {
 			immediate: true,
 			flush: 'post',
 		})

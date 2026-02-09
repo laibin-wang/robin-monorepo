@@ -3,6 +3,7 @@ import type { EChartsOption, ResizeOpts } from 'echarts/types/dist/shared'
 import {
 	computed,
 	inject,
+	nextTick,
 	onMounted,
 	onUnmounted,
 	provide,
@@ -17,6 +18,7 @@ import {
 import type {
 	CartesianGridOption,
 	ChartContext,
+	EChartsFullOption,
 	UpdateOptions,
 	UseChartOptions,
 	UseChartReturn,
@@ -25,10 +27,11 @@ import type {
 import { Chart } from '../core/Chart'
 import { ChartManager } from '../core/ChartManager'
 import { generateId } from '../utils/chartHelpers'
-import { debounce } from '../utils/debounce'
+import { createOptimizedResizeHandler } from '../utils/resizeOptimizer'
 import { createModuleCollector, ModuleCollectorKey } from './useModuleCollector'
 
 export const ChartKey: InjectionKey<Partial<ChartContext>> = Symbol('ChartContext')
+const componentOptionsCache = new WeakMap<object, Map<string, { type: any; option: any }>>()
 
 export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	const { config = {}, initialModules = [], id = generateId('ins'), onReady, onError } = options
@@ -39,13 +42,39 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	const isLoading = ref(false)
 	const error = ref<Error | null>(null)
 
-	const componentOptions = reactive(new Map<string, { type: any; option: any }>())
+	const componentOptions = reactive({
+		data: new Map<string, { type: any; option: any }>(),
+		version: 0,
+	})
+	const optionCache = {
+		value: null as EChartsFullOption | null,
+		hash: '',
+	}
+	const computeOptionHash = () => {
+		const entries = Array.from(componentOptions.data.entries())
+		return entries
+			.map(([key, { type, option }]) => `${key}:${type}:${JSON.stringify(option)}`)
+			.join('|')
+	}
+	const computeUpdatedOption = (updatedComponentIds?: string[]): EChartsFullOption => {
+		const currentHash = computeOptionHash()
 
-	const optionState = computed<EChartsOption>(() => {
-		const result: EChartsOption = {}
+		// 如果缓存有效且没有指定更新的组件ID，返回缓存
+		if (optionCache.value && optionCache.hash === currentHash && !updatedComponentIds?.length) {
+			return optionCache.value
+		}
+
+		const result: EChartsFullOption = {}
 		const groupedOptions = new Map<string, any[]>()
 
-		componentOptions.forEach(({ type, option }) => {
+		// 如果指定了更新的组件ID，只处理这些组件
+		const entriesToProcess = updatedComponentIds
+			? updatedComponentIds
+					.map(id => [id, componentOptions.data.get(id)] as const)
+					.filter(([_, val]) => val)
+			: Array.from(componentOptions.data.entries())
+
+		entriesToProcess.forEach(([_, { type, option }]) => {
 			if (!groupedOptions.has(type)) {
 				groupedOptions.set(type, [])
 			}
@@ -63,7 +92,15 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			}
 		})
 
+		// 更新缓存
+		optionCache.value = result
+		optionCache.hash = currentHash
+
 		return result
+	}
+
+	const optionState = computed<EChartsFullOption>(() => {
+		return computeUpdatedOption()
 	})
 
 	const manager = ChartManager.getInstance()
@@ -71,34 +108,63 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 
 	provide(ModuleCollectorKey, collector)
 
+	const updateQueue = new Set<string>()
+	let updateTimer: ReturnType<typeof setTimeout> | null = null
+
+	const scheduleUpdate = (componentId: string) => {
+		updateQueue.add(componentId)
+
+		if (updateTimer) {
+			clearTimeout(updateTimer)
+		}
+
+		// 使用 microtask 延迟更新
+		updateTimer = setTimeout(() => {
+			if (chart.value && isReady.value && updateQueue.size > 0) {
+				// 只更新变化的组件
+				const updatedOption = computeUpdatedOption(Array.from(updateQueue))
+				chart.value.setOption(updatedOption, { notMerge: false })
+			}
+			updateQueue.clear()
+			updateTimer = null
+		}, 0)
+	}
+
 	provide(ChartKey, {
 		chart: chart,
 		setOptionByOne: (componentId, type, option) => {
 			if (!option) return
 
-			componentOptions.set(componentId, { type, option })
+			const oldValue = componentOptions.data.get(componentId)
+			// 只有选项变化时才更新
+			if (!oldValue || JSON.stringify(oldValue.option) !== JSON.stringify(option)) {
+				componentOptions.data.set(componentId, { type, option })
+				componentOptions.version++ // 触发响应式更新
+				scheduleUpdate(componentId)
+			}
 			console.log('setOptionByOne', componentId, type, componentOptions)
 		},
 		setCartesianGrid: opt => {
 			const componentId = generateId('cartesianGrid')
-			componentOptions.set(componentId, { type: 'cartesianGrid', option: opt })
+			const oldValue = componentOptions.data.get(componentId)
+
+			if (!oldValue || JSON.stringify(oldValue.option) !== JSON.stringify(opt)) {
+				componentOptions.data.set(componentId, { type: 'cartesianGrid', option: opt })
+				componentOptions.version++
+				scheduleUpdate(componentId)
+			}
 			console.log('setCartesianGrid', componentId, opt)
 		},
 	})
 
-	const updateChart = debounce(() => {
-		if (chart.value && isReady.value) {
-			chart.value.setOption(optionState.value, { notMerge: false })
-		}
-	})
-
-	watch(
-		optionState,
-		() => {
-			updateChart()
-			console.log('optionState-watch', optionState)
+	const resizeHandler = createOptimizedResizeHandler(
+		(size: { width: number; height: number }) => {
+			if (chart.value && isReady.value) {
+				chart.value.resize({ width: size.width, height: size.height })
+			}
 		},
-		{ deep: true },
+		config.debounce || 100,
+		config.throttle || 0,
 	)
 
 	const initChart = async () => {
@@ -110,6 +176,9 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 
 		try {
 			isLoading.value = true
+			// 测量初始化性能
+			const startTime = performance.now()
+
 			const instance = new Chart(containerRef.value, config)
 
 			// 收集所有需要的模块
@@ -120,6 +189,8 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			// 按需加载模块
 			instance.require(...allModules)
 			await instance.init()
+			const initTime = performance.now() - startTime
+			console.log(`Chart initialized in ${initTime.toFixed(2)}ms with modules:`, allModules)
 
 			chart.value = instance
 			manager.register(id, instance)
@@ -127,8 +198,9 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			isLoading.value = false
 
 			// 初始设置选项
-			if (componentOptions.size > 0) {
-				instance.setOption(optionState.value, { notMerge: false })
+			if (componentOptions.data.size > 0) {
+				const initialOption = computeUpdatedOption()
+				instance.setOption(initialOption, { notMerge: false })
 			}
 
 			console.log('Chart initialized successfully', instance.getOption())
@@ -142,14 +214,25 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	}
 
 	onMounted(() => {
-		initChart()
+		nextTick(() => {
+			initChart()
+		})
 	})
 
 	onUnmounted(() => {
 		manager.dispose(id)
 		chart.value?.dispose()
-		updateChart.cancel()
+		resizeHandler.cancel()
 		isReady.value = false
+		componentOptions.data.clear()
+		optionCache.value = null
+		optionCache.hash = ''
+
+		if (updateTimer) {
+			clearTimeout(updateTimer)
+			updateTimer = null
+		}
+		updateQueue.clear()
 	})
 
 	return {
@@ -158,8 +241,15 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 		isReady,
 		isLoading,
 		error,
-		setOption: (opt: EChartsOption, opts: UpdateOptions = {}) => chart.value?.setOption(opt, opts),
-		resize: (opts: ResizeOpts) => chart.value?.resize(opts),
+		setOption: (opt: EChartsFullOption, opts: UpdateOptions = {}) =>
+			chart.value?.setOption(opt, opts),
+		resize: (opts: ResizeOpts) => {
+			if (typeof opts === 'object' && 'width' in opts && 'height' in opts) {
+				resizeHandler(opts as any)
+			} else {
+				chart.value?.resize(opts)
+			}
+		},
 		dispatchAction: payload => chart.value?.dispatchAction(payload),
 		on: (event: string, handler: Function) => chart.value?.on(event, handler),
 		off: (event: string, handler: Function) => chart.value?.off(event, handler),
@@ -168,6 +258,11 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 		clear: () => chart.value?.clear(),
 		dispose: () => chart.value?.dispose(),
 		getOption: () => chart.value?.getOption(),
+		getPerformance: () => ({
+			componentCount: componentOptions.data.size,
+			cacheHit: optionCache.value !== null,
+			updateQueueSize: updateQueue.size,
+		}),
 	}
 }
 export function useChartContext(): ChartContext {
