@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, useTemplateRef, watch, watchEffect } from 'vue'
+import { computed, onMounted, onUnmounted, useTemplateRef } from 'vue'
 import { useResizeObserver } from '@vueuse/core'
 import { useChart } from '../composables/useChart'
 import type { CSSProperties } from 'vue'
@@ -60,6 +60,7 @@ const wrapperStyle = computed<CSSProperties>(() => {
 })
 
 const {
+	isLoading,
 	chart,
 	chartRef,
 	resize: chartResize,

@@ -1,54 +1,26 @@
 import type { TitleComponentOption } from 'echarts/types/dist/option'
+import type { PropType } from 'vue'
 
-import { defineComponent, computed, watch, type PropType } from 'vue'
+import { definePrivateProps } from '../types'
+import { createChartComponent } from './ChartFactoryComponent'
 
-import { useChartContext } from '../composables/useChart'
-import { declareModules } from '../composables/useModuleCollector'
-import { generateId } from '../utils/chartHelpers'
+interface TitleProps extends TitleComponentOption {
+	text?: string
+	subtext?: string
+	textAlign?: TitleComponentOption['textAlign']
+}
+type TitlePrivateProps = Pick<TitleProps, 'text' | 'subtext' | 'textAlign'>
 
-export default defineComponent({
-	name: 'Title',
-
-	props: {
-		text: String,
-		subtext: String,
-		textAlign: String as PropType<TitleComponentOption['textAlign']>,
-		config: {
-			type: Object as PropType<TitleComponentOption>,
-			default: () => ({}),
-		},
-	},
-
-	setup(props) {
-		const componentFlag = 'title'
-		const componentId = generateId(componentFlag)
-		const ctx = useChartContext()
-		declareModules(['TitleComponent'])
-
-		const options = computed(() => {
-			const { config, ...restProps } = props
-
-			const baseOptions: Partial<TitleComponentOption & { _rcb_id: string }> = {
-				_rcb_id: componentId,
-			}
-
-			Object.keys(restProps).forEach(key => {
-				const value = restProps[key as keyof typeof restProps]
-				if (value !== undefined && key !== 'config') {
-					;(baseOptions as any)[key] = value
-				}
-			})
-			return {
-				...baseOptions,
-				...config,
-			} as TitleComponentOption
-		})
-
-		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {
-			immediate: true,
-			flush: 'post',
-		})
-
-		return () => null
-	},
+const titlePrivateProps = definePrivateProps<TitlePrivateProps>({
+	text: String,
+	subtext: String,
+	textAlign: String as PropType<TitleComponentOption['textAlign']>,
 })
+
+export default createChartComponent<TitleProps, TitlePrivateProps>(
+	'Title',
+	{},
+	['TitleComponent'],
+	'title',
+	titlePrivateProps,
+)

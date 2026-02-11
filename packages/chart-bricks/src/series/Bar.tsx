@@ -1,55 +1,25 @@
-import type { BarSeriesOption, TooltipComponentOption } from 'echarts/types/dist/option'
+import type { BarSeriesOption } from 'echarts/types/dist/option'
+import type { PropType } from 'vue'
 
-import { defineComponent, computed, watch, type PropType } from 'vue'
+import { createChartComponent } from '../primitive/ChartFactoryComponent'
+import { definePrivateProps } from '../types'
 
-import { useChartContext } from '../composables/useChart'
-import { declareModules } from '../composables/useModuleCollector'
-import { generateId } from '../utils/chartHelpers'
+interface BarSeriesProps extends BarSeriesOption {
+	name?: BarSeriesOption['name']
+	data?: BarSeriesOption['data']
+}
+type BarSeriesPrivateProps = Pick<BarSeriesProps, 'name' | 'data'>
 
-export default defineComponent({
-	name: 'Bar',
-
-	props: {
-		name: String,
-		data: Array as PropType<BarSeriesOption['data']>,
-		formatter: [String, Function] as any,
-		config: {
-			type: Object as PropType<BarSeriesOption>,
-			default: () => ({}),
-		},
-	},
-
-	setup(props) {
-		const componentFlag = 'bar'
-		const componentId = generateId(componentFlag)
-		const ctx = useChartContext()
-		declareModules(['BarChart'])
-
-		const options = computed(() => {
-			const { config, ...restProps } = props
-
-			const baseOptions: Partial<BarSeriesOption> = {
-				id: componentId,
-			}
-
-			Object.keys(restProps).forEach(key => {
-				const value = restProps[key as keyof typeof restProps]
-				if (value !== undefined && key !== 'config') {
-					;(baseOptions as any)[key] = value
-				}
-			})
-			return {
-				...baseOptions,
-				...config,
-				type: 'bar',
-			} as BarSeriesOption
-		})
-
-		watch(options, opt => ctx.setOptionByOne(componentId, 'series', opt), {
-			immediate: true,
-			flush: 'post',
-		})
-
-		return () => null
-	},
+const customPrivateProps = definePrivateProps<BarSeriesPrivateProps>({
+	name: String as PropType<BarSeriesOption['name']>,
+	data: Array as PropType<BarSeriesOption['data']>,
 })
+export default createChartComponent<BarSeriesProps, BarSeriesPrivateProps>(
+	'Bar',
+	{
+		type: 'bar',
+	},
+	['BarChart'],
+	'series',
+	customPrivateProps,
+)

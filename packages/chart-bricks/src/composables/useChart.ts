@@ -1,7 +1,6 @@
-import type { EChartsOption, ResizeOpts } from 'echarts/types/dist/shared'
+import type { ResizeOpts } from 'echarts/types/dist/shared'
 
 import {
-	computed,
 	inject,
 	nextTick,
 	onMounted,
@@ -11,7 +10,6 @@ import {
 	ref,
 	shallowRef,
 	useTemplateRef,
-	watch,
 	type InjectionKey,
 } from 'vue'
 
@@ -29,9 +27,12 @@ import { ChartManager } from '../core/ChartManager'
 import { generateId } from '../utils/chartHelpers'
 import { createOptimizedResizeHandler } from '../utils/resizeOptimizer'
 import { createModuleCollector, ModuleCollectorKey } from './useModuleCollector'
+interface ComponentData {
+	type: string
+	option: EChartsFullOption
+}
 
 export const ChartKey: InjectionKey<Partial<ChartContext>> = Symbol('ChartContext')
-const componentOptionsCache = new WeakMap<object, Map<string, { type: any; option: any }>>()
 
 export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	const { config = {}, initialModules = [], id = generateId('ins'), onReady, onError } = options
@@ -43,7 +44,7 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	const error = ref<Error | null>(null)
 
 	const componentOptions = reactive({
-		data: new Map<string, { type: any; option: any }>(),
+		data: new Map<string, ComponentData>(),
 		version: 0,
 	})
 	const optionCache = {
@@ -70,11 +71,14 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 		// 如果指定了更新的组件ID，只处理这些组件
 		const entriesToProcess = updatedComponentIds
 			? updatedComponentIds
-					.map(id => [id, componentOptions.data.get(id)] as const)
-					.filter(([_, val]) => val)
+					.map(id => {
+						const val = componentOptions.data.get(id)
+						return val ? ([id, val] as const) : null
+					})
+					.filter((entry): entry is readonly [string, ComponentData] => entry !== null)
 			: Array.from(componentOptions.data.entries())
 
-		entriesToProcess.forEach(([_, { type, option }]) => {
+		entriesToProcess.forEach(([_, { type = '', option = {} }]) => {
 			if (!groupedOptions.has(type)) {
 				groupedOptions.set(type, [])
 			}
@@ -98,10 +102,6 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 
 		return result
 	}
-
-	const optionState = computed<EChartsFullOption>(() => {
-		return computeUpdatedOption()
-	})
 
 	const manager = ChartManager.getInstance()
 	const { collector } = createModuleCollector()
@@ -138,18 +138,20 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			const oldValue = componentOptions.data.get(componentId)
 			// 只有选项变化时才更新
 			if (!oldValue || JSON.stringify(oldValue.option) !== JSON.stringify(option)) {
-				componentOptions.data.set(componentId, { type, option })
+				componentOptions.data.set(componentId, { type, option } as ComponentData)
 				componentOptions.version++ // 触发响应式更新
 				scheduleUpdate(componentId)
 			}
 			console.log('setOptionByOne', componentId, type, componentOptions)
 		},
-		setCartesianGrid: opt => {
-			const componentId = generateId('cartesianGrid')
+		setCartesianGrid: (componentId, opt) => {
 			const oldValue = componentOptions.data.get(componentId)
 
 			if (!oldValue || JSON.stringify(oldValue.option) !== JSON.stringify(opt)) {
-				componentOptions.data.set(componentId, { type: 'cartesianGrid', option: opt })
+				componentOptions.data.set(componentId, {
+					type: 'cartesianGrid',
+					option: opt,
+				} as ComponentData)
 				componentOptions.version++
 				scheduleUpdate(componentId)
 			}
@@ -176,6 +178,7 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 
 		try {
 			isLoading.value = true
+			// await new Promise(resolve => setTimeout(resolve, 5000))
 			// 测量初始化性能
 			const startTime = performance.now()
 

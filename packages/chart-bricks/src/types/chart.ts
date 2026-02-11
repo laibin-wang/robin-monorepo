@@ -46,6 +46,8 @@ export interface DataItem {
 	[key: string]: any
 }
 
+export type OptionAxisType = 'category' | 'value' | 'log' | 'time'
+
 export type ChartType =
 	| 'line'
 	| 'bar'
@@ -131,6 +133,8 @@ export interface ChartConfig {
 	useDirtyRect?: boolean
 	useCoarsePointer?: boolean
 	pointerSize?: number
+	debounce?: number
+	throttle?: number
 }
 
 export interface UpdateOptions {
@@ -184,7 +188,7 @@ type SetOptionKey = keyof EChartsOption
 
 export interface ChartContext {
 	chart: ShallowRef<Chart | null>
-	setCartesianGrid(opt: CartesianGridOption): void
+	setCartesianGrid(id: string, opt: CartesianGridOption): void
 	setOptionByOne<K extends SetOptionKey>(
 		id: string,
 		type: K,

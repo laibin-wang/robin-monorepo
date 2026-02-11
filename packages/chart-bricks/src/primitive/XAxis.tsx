@@ -1,55 +1,24 @@
 import type { XAXisOption } from 'echarts/types/dist/shared'
+import type { PropType } from 'vue'
 
-import { defineComponent, computed, watch, type PropType } from 'vue'
+import { definePrivateProps, type OptionAxisType } from '../types'
+import { createChartComponent } from './ChartFactoryComponent'
 
-import { useChartContext } from '../composables/useChart'
-import { declareModules } from '../composables/useModuleCollector'
-import { generateId } from '../utils/chartHelpers'
+interface XAXisProps extends Omit<XAXisOption, 'type'> {
+	type?: OptionAxisType
+}
+type XAXisPrivateProps = Pick<XAXisProps, 'type'>
 
-export default defineComponent({
-	name: 'XAxis',
-
-	props: {
-		type: {
-			type: String as PropType<XAXisOption['type']>,
-			default: 'category',
-		},
-		config: {
-			type: Object as PropType<XAXisOption>,
-			default: () => ({}),
-		},
-	},
-
-	setup(props) {
-		const componentFlag = 'xAxis'
-		const componentId = generateId(componentFlag)
-		const ctx = useChartContext()
-		declareModules(['GridComponent'])
-
-		const options = computed(() => {
-			const { config, ...restProps } = props
-
-			const baseOptions: Partial<XAXisOption & { _rcb_id: string }> = {
-				_rcb_id: componentId,
-			}
-
-			Object.keys(restProps).forEach(key => {
-				const value = restProps[key as keyof typeof restProps]
-				if (value !== undefined && key !== 'config') {
-					;(baseOptions as any)[key] = value
-				}
-			})
-			return {
-				...baseOptions,
-				...config,
-			} as XAXisOption
-		})
-
-		watch(options, opt => ctx.setOptionByOne(componentId, componentFlag, opt), {
-			immediate: true,
-			flush: 'post',
-		})
-
-		return () => null
-	},
+const customPrivateProps = definePrivateProps<XAXisPrivateProps>({
+	type: String as PropType<XAXisOption['type']>,
 })
+
+export default createChartComponent<XAXisProps, XAXisPrivateProps>(
+	'XAxis',
+	{
+		type: 'category',
+	},
+	['GridComponent'],
+	'xAxis',
+	customPrivateProps,
+)

@@ -1,4 +1,4 @@
-import { DataItem } from './chart'
+import type { DataItem } from './chart'
 
 export * from './chart'
 export * from './theme'

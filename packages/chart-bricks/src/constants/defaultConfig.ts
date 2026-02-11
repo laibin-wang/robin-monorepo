@@ -1,5 +1,3 @@
-import type { XAXisComponentOption, YAXisComponentOption } from 'echarts/types/dist/option'
-
 import type { ChartConfig } from '../types'
 
 export const DEFAULT_CHART_CONFIG: ChartConfig = {

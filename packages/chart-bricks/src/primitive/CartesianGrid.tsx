@@ -1,21 +1,12 @@
-import type {
-	GridComponentOption,
-	YAXisComponentOption,
-	XAXisComponentOption,
-} from 'echarts/types/dist/option'
-import type { EChartsOption, XAXisOption, YAXisOption } from 'echarts/types/dist/shared'
+import type { GridComponentOption } from 'echarts/types/dist/option'
+import type { XAXisOption, YAXisOption } from 'echarts/types/dist/shared'
 
-import { defineComponent, computed, watch, type PropType } from 'vue'
+import { defineComponent, computed, type PropType, watchEffect, nextTick, onUnmounted } from 'vue'
 
 import type { CartesianGridOption } from '../types'
 
 import { useChartContext } from '../composables/useChart'
 import { declareModules } from '../composables/useModuleCollector'
-import {
-	DEFAULT_GRID_CONFIG,
-	DEFAULT_XAXIS_CONFIG,
-	DEFAULT_YAXIS_CONFIG,
-} from '../constants/defaultConfig'
 import { generateId } from '../utils/chartHelpers'
 
 export default defineComponent({
@@ -24,15 +15,14 @@ export default defineComponent({
 	props: {
 		grid: {
 			type: [Array, Object] as PropType<GridComponentOption | GridComponentOption[]>,
-			default: undefined,
 		},
 		xAxis: {
 			type: [Array, Object] as PropType<XAXisOption | XAXisOption[]>,
-			default: () => DEFAULT_XAXIS_CONFIG,
+			default: () => {},
 		},
 		yAxis: {
 			type: [Array, Object] as PropType<YAXisOption | YAXisOption[]>,
-			default: () => DEFAULT_YAXIS_CONFIG,
+			default: () => {},
 		},
 	},
 
@@ -41,6 +31,7 @@ export default defineComponent({
 		const componentId = generateId(componentFlag)
 		const ctx = useChartContext()
 		declareModules(['GridComponent', 'UniversalTransition'])
+		console.log('createChartComponent', 'CartesianGrid', componentFlag, componentId)
 
 		// 使用类型守卫函数来明确类型
 		const isGridArray = (
@@ -62,12 +53,10 @@ export default defineComponent({
 
 			if (isGridArray(props.grid)) {
 				return props.grid.map(item => ({
-					...DEFAULT_GRID_CONFIG,
 					...item,
 				}))
 			} else {
 				return {
-					...DEFAULT_GRID_CONFIG,
 					...props.grid,
 				}
 			}
@@ -78,12 +67,12 @@ export default defineComponent({
 
 			if (isXAxisArray(xAxis)) {
 				return xAxis.map(item => ({
-					...DEFAULT_XAXIS_CONFIG,
+					type: 'category',
 					...item,
 				})) as XAXisOption[]
 			} else {
 				return {
-					...DEFAULT_XAXIS_CONFIG,
+					type: 'category',
 					...xAxis,
 				} as XAXisOption
 			}
@@ -94,35 +83,42 @@ export default defineComponent({
 
 			if (isYAxisArray(yAxis)) {
 				return yAxis.map(item => ({
-					...DEFAULT_YAXIS_CONFIG,
+					type: 'value',
 					...item,
 				})) as YAXisOption[]
 			} else {
 				return {
-					...DEFAULT_YAXIS_CONFIG,
+					type: 'value',
 					...yAxis,
 				} as YAXisOption
 			}
 		})
 
-		const option = computed<CartesianGridOption>(() => {
+		const options = computed<CartesianGridOption>(() => {
 			const result: CartesianGridOption = {
 				xAxis: xAxisOptions.value,
 				yAxis: yAxisOptions.value,
 			}
 
 			const gridValue = gridOptions.value
-			if (gridValue !== undefined) {
+			if (gridValue) {
 				result.grid = gridValue
 			}
 
 			return result
 		})
 
-		watch(option, opt => ctx.setCartesianGrid(opt), { immediate: true, deep: true })
+		watchEffect(() => {
+			const opt = options.value // 自动追踪
+			nextTick(() => {
+				ctx.setCartesianGrid(componentId, opt)
+			})
+		})
 
-		console.log('CartesianGrid component initialized with ID:', componentId)
-
+		onUnmounted(() => {
+			// 清理图表实例
+			// ctx.removeOption(componentId)
+		})
 		return () => null
 	},
 })
