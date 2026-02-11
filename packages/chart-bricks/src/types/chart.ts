@@ -37,7 +37,7 @@ import type {
 	XAXisOption,
 	YAXisOption,
 } from 'echarts/types/dist/shared'
-import type { Ref, ShallowRef } from 'vue'
+import type { ComponentPropsOptions, PropType, Ref, ShallowRef } from 'vue'
 
 import type { Chart } from '../core/Chart'
 import type { ModuleName } from './register'
@@ -209,4 +209,18 @@ export interface ChartContext {
 	// clear: () => void
 	// getOption: () => any
 	// data?: () => void
+}
+
+export type ChartComponentProps<T extends object, P extends Record<string, any> = {}> = {
+	config?: T
+} & P
+
+export type ChartComponentFactory<T extends object, P extends Record<string, any> = {}> = {
+	props: ComponentPropsOptions<ChartComponentProps<T, P>>
+	setup: (props: ChartComponentProps<T, P>) => () => null
+}
+export function definePrivateProps<T extends Record<string, any>>(definition: {
+	[K in keyof T]: PropType<T[K]> | { type: PropType<T[K]> }
+}) {
+	return definition
 }
