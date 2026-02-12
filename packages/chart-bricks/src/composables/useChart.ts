@@ -24,6 +24,7 @@ import type {
 
 import { Chart } from '../core/Chart'
 import { ChartManager } from '../core/ChartManager'
+import Loading from '../core/PureLoading'
 import { generateId } from '../utils/chartHelpers'
 import { createOptimizedResizeHandler } from '../utils/resizeOptimizer'
 import { createModuleCollector, ModuleCollectorKey } from './useModuleCollector'
@@ -40,8 +41,8 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 	const containerRef = useTemplateRef<HTMLElement | null>('chartBrickRef')
 	const chart = shallowRef<Chart | null>(null)
 	const isReady = ref(false)
-	const isLoading = ref(false)
 	const error = ref<Error | null>(null)
+	const loader = ref<Loading | null>(null)
 
 	const componentOptions = reactive({
 		data: new Map<string, ComponentData>(),
@@ -175,14 +176,16 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			onError?.(error.value)
 			return
 		}
+		loader.value = new Loading({ id, target: containerRef.value.parentNode as HTMLElement })
+		loader.value.start({ text: '正在加载...' })
 
 		try {
-			isLoading.value = true
-			// await new Promise(resolve => setTimeout(resolve, 5000))
 			// 测量初始化性能
 			const startTime = performance.now()
 
 			const instance = new Chart(containerRef.value, config)
+			// await new Promise(resolve => setTimeout(resolve, 5000))
+			// await new Promise(resolve => setTimeout(resolve, 5000))
 
 			// 收集所有需要的模块
 			const declaredModules = collector.getAll()
@@ -192,24 +195,25 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			// 按需加载模块
 			instance.require(...allModules)
 			await instance.init()
+			loader.value.start({
+				text: '加在所需要的模块...',
+			})
 			const initTime = performance.now() - startTime
 			console.log(`Chart initialized in ${initTime.toFixed(2)}ms with modules:`, allModules)
 
 			chart.value = instance
 			manager.register(id, instance)
 			isReady.value = true
-			isLoading.value = false
 
 			// 初始设置选项
 			if (componentOptions.data.size > 0) {
 				const initialOption = computeUpdatedOption()
 				instance.setOption(initialOption, { notMerge: false })
 			}
-
-			console.log('Chart initialized successfully', instance.getOption())
 			onReady?.(instance)
+			loader.value.end()
 		} catch (err) {
-			isLoading.value = false
+			loader.value.end()
 			error.value = err instanceof Error ? err : new Error(String(err))
 			console.error('Chart initialization failed:', error.value)
 			onError?.(error.value)
@@ -236,13 +240,16 @@ export function useChart(options: UseChartOptions = {}): UseChartReturn {
 			updateTimer = null
 		}
 		updateQueue.clear()
+		if (loader.value) {
+			loader.value.end(true)
+			loader.value = null
+		}
 	})
 
 	return {
 		chartRef: containerRef,
 		chart,
 		isReady,
-		isLoading,
 		error,
 		setOption: (opt: EChartsFullOption, opts: UpdateOptions = {}) =>
 			chart.value?.setOption(opt, opts),

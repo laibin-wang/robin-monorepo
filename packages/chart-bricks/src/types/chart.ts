@@ -156,7 +156,6 @@ export interface UseChartReturn {
 	chartRef: Ref<HTMLElement | null>
 	chart: ShallowRef<Chart | null>
 	isReady: Ref<boolean>
-	isLoading: Ref<boolean>
 	error: Ref<Error | null>
 	on: (event: string, handler: Function) => void
 	off: (event: string, handler: Function) => void
